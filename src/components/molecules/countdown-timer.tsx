@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 
 interface CountdownProps {
@@ -13,8 +15,10 @@ const TimeBox = ({ value, label }: { value: number; label: string }) => (
 
 export const CountdownTimer = ({ targetDate }: CountdownProps) => {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         const timer = setInterval(() => {
             const now = new Date().getTime();
             const distance = targetDate - now;
@@ -33,6 +37,8 @@ export const CountdownTimer = ({ targetDate }: CountdownProps) => {
 
         return () => clearInterval(timer);
     }, [targetDate]);
+
+    if (!isMounted) return null;
 
     return (
         <div className="flex gap-4 md:gap-6 justify-center flex-wrap">
