@@ -11,6 +11,8 @@ type Modalidade = {
     priceDiscount: number;
     type: "public" | "police";
     badge?: string;
+    lotText?: string;
+    subtext?: string;
     features: string[];
 };
 
@@ -33,38 +35,44 @@ export const Registration = () => {
             id: 1,
             title: "5KM - CIDADÃO",
             distance: "5KM",
-            priceFull: 80.00,
-            priceDiscount: 64.00,
+            priceFull: 90.00,
+            priceDiscount: 80.00,
             type: "public",
+            lotText: "1º Lote",
             features: ["Camiseta técnica personalizada", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital"]
         },
         {
             id: 2,
-            title: "5KM - POLICIAL CIVIL",
+            title: "5KM - POLICIAL",
             distance: "5KM",
-            priceFull: 80.00, // Assuming base price is same
-            priceDiscount: 51.20, // 20% on top of 64? Or just fixed? User example is 64 -> 51.20 (20% off 64)
+            priceFull: 80.00,
+            priceDiscount: 80.00,
             type: "police",
-            badge: "20% OFF PC",
+            badge: "LOTE ÚNICO",
+            subtext: "esta categoria abrange todas as forças policiais",
+            lotText: "Valor Fixo",
             features: ["Camiseta técnica personalizada", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital"]
         },
         {
             id: 3,
-            title: "8KM - CIDADÃO",
-            distance: "8KM",
-            priceFull: 100.00,
+            title: "10KM - CIDADÃO",
+            distance: "10KM",
+            priceFull: 90.00,
             priceDiscount: 80.00,
             type: "public",
+            lotText: "1º Lote",
             features: ["Camiseta técnica personalizada", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital"]
         },
         {
             id: 4,
-            title: "8KM - POLICIAL CIVIL",
-            distance: "8KM",
-            priceFull: 100.00,
-            priceDiscount: 64.00, // 20% off 80
+            title: "10KM - POLICIAL",
+            distance: "10KM",
+            priceFull: 80.00,
+            priceDiscount: 80.00,
             type: "police",
-            badge: "20% OFF PC",
+            badge: "LOTE ÚNICO",
+            subtext: "esta categoria abrange todas as forças policiais",
+            lotText: "Valor Fixo",
             features: ["Camiseta técnica personalizada", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital"]
         }
     ];
@@ -74,7 +82,7 @@ export const Registration = () => {
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-4xl font-black text-secondary mb-4 font-heading">ESCOLHA SUA MODALIDADE</h2>
-                    <p className="text-gray-500 font-medium">Inscrições abertas de 09/06/2026 até 30/08/2026</p>
+                    <p className="text-gray-500 font-medium">Inscrições abertas de 08/06/2025 até 01/08/2025</p>
                 </div>
 
                 {/* Timeline de Lotes */}
@@ -88,20 +96,22 @@ export const Registration = () => {
                                 ATUAL: 1º LOTE
                             </div>
                             <div className="w-4 h-4 bg-primary rounded-full ring-4 ring-orange-100"></div>
-                            <span className="text-sm font-bold mt-2 text-primary">Até 09/07</span>
-                            <span className="text-xs text-gray-500">20% OFF</span>
+                            <span className="text-sm font-bold mt-2 text-primary">Até 29/06</span>
+                            <span className="text-xs text-gray-500 font-bold">R$ 80,00</span>
                         </div>
 
-                        <div className="bg-white p-2 z-10 flex flex-col items-center opacity-60">
+                        <div className="bg-white p-2 z-10 flex flex-col items-center opacity-70">
                             <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
-                            <span className="text-sm font-bold mt-2 text-gray-500">10/07 a 09/08</span>
-                            <span className="text-xs text-gray-400">10% OFF</span>
+                            <span className="text-sm font-bold mt-2 text-gray-500">30/06 a 19/07</span>
+                            <span className="text-xs text-gray-500 font-bold">R$ 85,00</span>
+                            <span className="text-[10px] text-gray-400 uppercase mt-0.5 max-w-[120px] text-center">Apenas para Cidadão</span>
                         </div>
 
-                        <div className="bg-white p-2 z-10 flex flex-col items-center opacity-60">
+                        <div className="bg-white p-2 z-10 flex flex-col items-center opacity-70">
                             <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
-                            <span className="text-sm font-bold mt-2 text-gray-500">10/08 a 30/08</span>
-                            <span className="text-xs text-gray-400">PREÇO CHEIO</span>
+                            <span className="text-sm font-bold mt-2 text-gray-500">A partir de 20/07</span>
+                            <span className="text-xs text-gray-500 font-bold">R$ 90,00</span>
+                            <span className="text-[10px] text-gray-400 uppercase mt-0.5 max-w-[120px] text-center">Apenas para Cidadão</span>
                         </div>
                     </div>
                 </div>
@@ -111,7 +121,14 @@ export const Registration = () => {
                     {modalidades.map((item) => (
                         <PricingCard
                             key={item.id}
-                            {...item}
+                            title={item.title}
+                            priceFull={item.priceFull}
+                            priceDiscount={item.priceDiscount}
+                            type={item.type}
+                            badge={item.badge}
+                            lotText={item.lotText}
+                            subtext={item.subtext}
+                            features={item.features}
                             onSelect={() => openModal(item)}
                         />
                     ))}
@@ -171,7 +188,7 @@ export const Registration = () => {
                                         </div>
                                         {selectedModalidade.type === 'police' && (
                                             <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">
-                                                Obrigatória apresentação de identificação funcional na retirada do kit.
+                                                Obrigatória apresentação de comprovação na retirada do kit.
                                             </div>
                                         )}
                                     </div>
