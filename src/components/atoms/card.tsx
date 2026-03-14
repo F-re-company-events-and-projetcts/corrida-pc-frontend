@@ -6,7 +6,7 @@ export interface CardProps extends React.ComponentProps<typeof ShadcnCard> {
     variant?: "default" | "highlight-orange" | "highlight-blue"
 }
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, variant = "default", ...props }, ref) => {
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, variant = "default", ...props }, ref) => {
     return (
         <ShadcnCard
             ref={ref}

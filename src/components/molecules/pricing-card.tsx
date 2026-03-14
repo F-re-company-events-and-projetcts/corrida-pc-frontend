@@ -9,10 +9,12 @@ interface PricingCardProps {
     type: "public" | "police";
     badge?: string;
     features: string[];
+    lotText?: string;
+    subtext?: string;
     onSelect: () => void;
 }
 
-export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, features, onSelect }: PricingCardProps) => {
+export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, features, lotText, subtext, onSelect }: PricingCardProps) => {
     const isPolice = type === "police";
 
     return (
@@ -29,16 +31,17 @@ export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, feat
             <h3 className={cn("text-xl font-black mb-1", isPolice ? "text-white" : "text-secondary")}>
                 {title}
             </h3>
+            {subtext && <p className="text-[10px] uppercase opacity-80 mb-2 font-medium tracking-wider">{subtext}</p>}
 
             <div className="my-4">
-                <span className="text-xs line-through opacity-60 mr-2">R$ {priceFull.toFixed(2)}</span>
+                {priceFull > priceDiscount && <span className="text-xs line-through opacity-60 mr-2">R$ {priceFull.toFixed(2)}</span>}
                 <div className="flex items-baseline gap-1">
                     <span className="text-sm font-bold">R$</span>
                     <span className={cn("text-4xl font-black", isPolice ? "text-accent" : "text-primary")}>
                         {priceDiscount.toFixed(2)}
                     </span>
                 </div>
-                <span className="text-xs opacity-70">1º Lote (Economize 20%)</span>
+                {lotText && <span className="text-xs opacity-70 mt-1 block">{lotText}</span>}
             </div>
 
             <ul className="space-y-3 mb-8 flex-grow">
@@ -53,7 +56,7 @@ export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, feat
             {isPolice && (
                 <div className="flex items-center gap-2 text-xs bg-white/10 p-2 rounded mb-4">
                     <AlertCircle size={14} className="text-accent flex-shrink-0" />
-                    <span>Necessário documento funcional</span>
+                    <span className="uppercase font-bold tracking-wider">Necessário comprovação</span>
                 </div>
             )}
 

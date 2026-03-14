@@ -6,7 +6,7 @@ export interface SeparatorProps extends React.ComponentProps<typeof ShadcnSepara
     variant?: "default" | "thick-orange"
 }
 
-export const Separator = React.forwardRef<React.ElementRef<typeof ShadcnSeparator>, SeparatorProps>(
+const Separator = React.forwardRef<React.ElementRef<typeof ShadcnSeparator>, SeparatorProps>(
     ({ className, orientation = "horizontal", decorative = true, variant = "default", ...props }, ref) => (
         <ShadcnSeparator
             ref={ref}

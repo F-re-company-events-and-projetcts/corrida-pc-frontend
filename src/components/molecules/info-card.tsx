@@ -21,10 +21,10 @@ export const InfoCard = ({ title, icon: Icon, color, children, footerText, class
     const selectedColor = colorMap[color];
 
     return (
-        <div className={cn("bg-white text-gray-800 p-8 rounded-2xl shadow-2xl relative overflow-hidden group", className)}>
+        <div className={cn("bg-white text-gray-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 relative overflow-hidden group", className)}>
             <div className={cn("absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-bl-full -mr-10 -mt-10 transition-colors", selectedColor.hover)}></div>
-            <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white mb-6 relative z-10", selectedColor.bg)}>
-                <Icon size={24} className={color === 'gold' ? 'text-secondary' : 'text-white'} />
+            <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-white mb-6 relative z-10 transition-transform duration-300 group-hover:scale-110", selectedColor.bg)}>
+                <Icon size={24} className={cn("transition-transform duration-300 group-hover:animate-pulse", color === 'gold' ? 'text-secondary' : 'text-white')} />
             </div>
             <h3 className="text-xl font-black mb-4 relative z-10">{title}</h3>
             <div className="relative z-10">
