@@ -18,7 +18,11 @@ export const CountdownTimer = ({ targetDate }: CountdownProps) => {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
         const timer = setInterval(() => {
             const now = new Date().getTime();
             const distance = targetDate - now;

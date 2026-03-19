@@ -15,11 +15,16 @@ export const Header = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const handleCorredoresClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        alert("Disponível após o fim das inscrições");
+    };
+
     const navLinks = [
-        { name: "Regulamento", href: "#" },
+        { name: "Em Breve", href: "#", disabled: true, onClick: () => alert("Detalhes serão divulgados em breve") },
         { name: "Entrega de Kit", href: "#" },
-        { name: "Área de Inscritos", href: "#" },
-        { name: "Corredores", href: "#" },
+        { name: "Galeria 2025", href: "#galeria" },
+        { name: "Corredores", href: "#", onClick: handleCorredoresClick },
     ];
 
     return (
@@ -45,15 +50,19 @@ export const Header = () => {
                         <a
                             key={item.name}
                             href={item.href}
+                            onClick={item.onClick}
                             className={cn(
-                                "font-semibold text-sm uppercase tracking-wide hover:text-primary transition-colors",
-                                scrolled ? "text-gray-800" : "text-white/90"
+                                "font-semibold text-sm uppercase tracking-wide transition-colors",
+                                item.disabled ? "cursor-not-allowed text-gray-400" : "hover:text-primary",
+                                !item.disabled && (scrolled ? "text-gray-800" : "text-white/90")
                             )}
                         >
                             {item.name}
                         </a>
                     ))}
-                    <Button className="py-2 px-6 text-sm shadow-orange-500/30">INSCREVA-SE</Button>
+                    <Button asChild className="py-2 px-6 text-sm shadow-orange-500/30">
+                        <a href="#registration">INSCREVA-SE</a>
+                    </Button>
                 </nav>
 
                 {/* Mobile Toggle */}
@@ -66,9 +75,21 @@ export const Header = () => {
             {isMenuOpen && (
                 <div className="absolute top-full left-0 w-full bg-white shadow-xl py-6 flex flex-col items-center gap-4 md:hidden border-t animate-in slide-in-from-top-2">
                     {navLinks.map((item) => (
-                        <a key={item.name} href={item.href} className="font-bold text-secondary text-lg hover:text-primary transition-colors">{item.name}</a>
+                        <a 
+                            key={item.name} 
+                            href={item.href} 
+                            onClick={item.onClick}
+                            className={cn(
+                                "font-bold text-lg transition-colors",
+                                item.disabled ? "cursor-not-allowed text-gray-400" : "text-secondary hover:text-primary"
+                            )}
+                        >
+                            {item.name}
+                        </a>
                     ))}
-                    <Button className="w-3/4">INSCREVA-SE</Button>
+                    <Button asChild className="w-3/4">
+                        <a href="#registration" onClick={() => setIsMenuOpen(false)}>INSCREVA-SE</a>
+                    </Button>
                 </div>
             )}
         </header>

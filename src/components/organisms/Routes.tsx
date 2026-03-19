@@ -1,5 +1,6 @@
 import { CourseCard } from "@/components/molecules/course-card";
 import Script from "next/script";
+import { RunnerAnimation } from "../atoms/animationTest";
 
 export const Routes = () => {
     return (
@@ -9,8 +10,8 @@ export const Routes = () => {
                     <h2 className="text-3xl md:text-4xl font-black text-secondary mb-2 font-heading">CONHEÇA OS PERCURSOS</h2>
                     <div className="w-24 h-1 bg-primary"></div>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12 items-start">
+                <RunnerAnimation />
+                <div className="grid grid-cols-1 lg:grid-cols-[2fr] gap-12 items-start">
                     {/* Coluna 1: Mapa Ilustrativo / Strava */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-white p-2 rounded-2xl shadow-lg relative overflow-hidden group">
@@ -24,25 +25,6 @@ export const Routes = () => {
                         </div>
                     </div>
 
-                    {/* Coluna 2: Cards */}
-                    <div className="space-y-6">
-                        <CourseCard
-                            title="5 QUILÔMETROS"
-                            distance={5}
-                            elevation={45}
-                            timeLimit="1h30"
-                            level="intermediate"
-                            color="orange"
-                        />
-                        <CourseCard
-                            title="10 QUILÔMETROS"
-                            distance={10}
-                            elevation={78}
-                            timeLimit="2h00"
-                            level="advanced"
-                            color="blue"
-                        />
-                    </div>
                 </div>
             </div>
             <Script src="https://strava-embeds.com/embed.js" strategy="lazyOnload" />

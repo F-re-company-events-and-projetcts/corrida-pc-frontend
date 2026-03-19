@@ -6,6 +6,7 @@ import { Countdown } from "@/components/organisms/Countdown";
 import { Routes } from "@/components/organisms/Routes";
 import { Registration } from "@/components/organisms/Registration";
 import { RaceInfo } from "@/components/organisms/RaceInfo";
+import { HistoryGallery } from "@/components/organisms/HistoryGallery";
 import { Footer } from "@/components/organisms/Footer";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
       <Routes />
       <Registration />
       <RaceInfo />
+      <HistoryGallery />
       <Footer />
     </div>
   );
