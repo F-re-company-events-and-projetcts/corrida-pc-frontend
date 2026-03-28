@@ -69,7 +69,7 @@ export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, feat
                         : "bg-secondary text-white hover:bg-primary"
                 )}
             >
-                INSCRIÇÃO EM BREVE
+                VER MAIS
             </button>
         </div>
     );
