@@ -1,18 +1,21 @@
 import { Button } from "@/components/atoms/button";
 import { Shield, Award } from "lucide-react";
+import Image from "next/image";
 
 export const Hero = () => {
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden [clip-path:polygon(0_0,100%_0,100%_90%,0_100%)] bg-[#F2F2F2]">
+        <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden [clip-path:polygon(0_0,100%_0,100%_90%,0_100%)] bg-[#F2F2F2]">
 
             {/* Background Image & Overlay */}
             <div className="absolute inset-0 z-0">
-                <img
-                    src="https://images.unsplash.com/photo-1552674605-469523170d73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-                    alt=""
-                    className="w-full h-full object-cover blur-sm"
+                <Image
+                    src="/hero/hero-delegacia-bg.jpeg"
+                    alt="Hero Background"
+                    fill
+                    className="object-cover"
+                    priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/95 to-destructive/90 mix-blend-multiply"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/30"></div>
             </div>
 
             {/* Watermark Element */}
@@ -20,31 +23,32 @@ export const Hero = () => {
                  <Shield className="w-[800px] h-[800px] text-white" />
             </div>
 
-            <div className="relative z-10 container mx-auto px-4 text-center text-white mt-16">
-                <div className="inline-block bg-primary px-4 py-1 rounded-full text-sm font-bold mb-6 tracking-widest uppercase animate-pulse">
+            <div className="relative z-10 container mx-auto px-4 text-center text-white mt-16 md:mt-0 flex flex-col items-center justify-center gap-6">
+                <div className="inline-block bg-primary px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase animate-pulse mb-2">
                     Inscrições em Breve! Fique Atento! 
                 </div>
 
-                <h1 className="text-5xl md:text-7xl font-black mb-4 leading-tight tracking-tight drop-shadow-lg font-heading">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight tracking-tight drop-shadow-lg font-heading">
                     2ª CORRIDA DO<br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200">
                         POLICIAL CIVIL
                     </span>
                 </h1>
 
-                <p className="text-xl md:text-2xl font-light mb-2 tracking-wide text-gray-200 mt-4">
-                    Coxim/MS • 27 de Setembro de 2026
-                </p>
+                <div>
+                    <p className="text-lg md:text-2xl font-light tracking-wide text-gray-200 mt-2">
+                        Coxim/MS • 27 de Setembro de 2026
+                    </p>
+                    <p className="text-base md:text-xl font-medium text-gray-300 italic mt-2">
+                        &quot;Força, Compromisso e Superação em Cada Passada&quot;
+                    </p>
+                </div>
 
-                <p className="text-lg md:text-xl font-medium text-gray-300 mb-10 italic">
-                    &quot;Força, Compromisso e Superação em Cada Passada&quot;
-                </p>
-
-                <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-                    <Button asChild className="text-lg px-10 py-5 w-full border-1 border-white md:w-auto shadow-orange-500/50 h-auto">
+                <div className="flex flex-col md:flex-row gap-4 justify-center items-center w-full max-w-sm md:max-w-2xl mt-6">
+                    <Button asChild className="text-base md:text-lg px-8 py-6 w-full md:w-auto border-1 border-white shadow-orange-500/50 h-auto">
                         <a href="#registration">VEJA AS MODALIDADES</a>
                     </Button>
-                    <a href="#registration" className="flex items-center gap-2 text-white font-semibold hover:text-accent transition-colors">
+                    <a href="#registration" className="flex items-center justify-center gap-2 text-white font-semibold hover:text-accent transition-colors w-full md:w-auto p-4 md:p-0">
                         <Award className="w-5 h-5" />
                         DETALHES DO KIT 
                     </a>
@@ -52,7 +56,7 @@ export const Hero = () => {
             </div>
 
             {/* Scroll Indicator */}
-            <div className="absolute bottom-14 left-1/2 transform -translate-x-1/2 animate-bounce text-white/50">
+            <div className="absolute bottom-6 md:bottom-14 left-1/2 transform -translate-x-1/2 animate-bounce text-white/50">
                 <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
                     <div className="w-1 h-2 bg-white rounded-full"></div>
                 </div>
