@@ -2,14 +2,15 @@ import { useState } from "react";
 import { PricingCard } from "@/components/molecules/pricing-card";
 import { Button } from "@/components/atoms/button";
 import { X, Check, Info } from "lucide-react";
+import { Typography } from "@/components/atoms/typography";
 
 type Modalidade = {
     id: number;
     title: string;
-    distance: string;
+    distance: "4KM" | "10KM";
     priceFull: number;
     priceDiscount: number;
-    type: "public" | "police";
+    type: "public" | "police"
     badge?: string;
     lotText?: string;
     subtext?: string;
@@ -33,23 +34,24 @@ export const Registration = () => {
     const modalidades: Modalidade[] = [
         {
             id: 1,
-            title: "5KM - CIDADÃO",
-            distance: "5KM",
+            title: "4KM - CIDADÃO",
+            distance: "4KM",
             priceFull: 90.00,
             priceDiscount: 80.00,
             type: "public",
             lotText: "1º Lote",
+            subtext: "somente medalha de participação",
             features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
         },
         {
             id: 2,
-            title: "5KM - POLICIAL",
-            distance: "5KM",
+            title: "4KM - POLICIAL",
+            distance: "4KM",
             priceFull: 80.00,
             priceDiscount: 80.00,
             type: "police",
             badge: "LOTE ÚNICO",
-            subtext: "esta categoria abrange todas as forças policiais",
+            subtext: "esta categoria abrange todas as forças policiais, somente medalha de participação",
             lotText: "Valor Fixo",
             features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
         },
@@ -105,12 +107,24 @@ export const Registration = () => {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Lote Atual:</span>
-                            <span className="font-bold text-green-600">1º Lote (Aberto)</span>
+                            <span className="font-bold text-green-600">1º Lote (EM BREVE)</span>
                         </div>
                         {modalidade.type === 'police' && (
                             <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">
+                                <div className="mb-2">
+                                    <span className="font-bold block mb-1">Atenção:</span>
+                                    A categoria policial, nesta edição, será destinada a todas as forças policiais de Mato Grosso do Sul, sendo necessária a comprovação de vínculo com a mesma na retirada do kit.
+                                </div>
+                                <div>
+                                    <span className="font-bold block mb-1">Instituições válidas:</span>
+                                    PMMS, PCMS, CBMMS, PF, PRF, PPMS     
+                                </div> 
+                            </div>
+                        )}
+                        {modalidade.distance === '4KM'  && (
+                            <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">
                                 <span className="font-bold block mb-1">Atenção:</span>
-                                A categoria policial, nesta edição, será destinada a todas as forças policiais de Mato Grosso do Sul, sendo necessária a comprovação de vínculo com a mesma na retirada do kit.
+                                Nesta categoria, não haverá premiação geral nem por faixas etárias, apenas medalhas para os participantes.
                             </div>
                         )}
                     </div>
@@ -136,8 +150,8 @@ export const Registration = () => {
         <section id="registration" className="py-20 bg-white">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-black text-secondary mb-4 font-heading">ESCOLHA SUA MODALIDADE</h2>
-                    <p className="text-gray-500 font-medium">Inscrições abertas de 08/06/2025 até 01/08/2025</p>
+                    <Typography variant="h2" as="h2" className="md:text-4xl font-black mb-4">ESCOLHA SUA MODALIDADE</Typography>
+                    <p className="text-gray-500 font-medium">Inscrições abertas de 08/06/2025 até 05/08/2025</p>
                 </div>
 
                 {/* Timeline de Lotes */}
