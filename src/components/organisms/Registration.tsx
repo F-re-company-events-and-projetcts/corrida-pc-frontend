@@ -41,7 +41,7 @@ export const Registration = () => {
             type: "public",
             lotText: "1º Lote",
             subtext: "somente medalha de participação",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
+            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         },
         {
             id: 2,
@@ -53,7 +53,7 @@ export const Registration = () => {
             badge: "LOTE ÚNICO",
             subtext: "esta categoria abrange todas as forças policiais, somente medalha de participação",
             lotText: "Valor Fixo",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
+            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         },
         {
             id: 3,
@@ -63,7 +63,7 @@ export const Registration = () => {
             priceDiscount: 80.00,
             type: "public",
             lotText: "1º Lote",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
+            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         },
         {
             id: 4,
@@ -75,7 +75,7 @@ export const Registration = () => {
             badge: "LOTE ÚNICO",
             subtext: "esta categoria abrange todas as forças policiais",
             lotText: "Valor Fixo",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Certificado digital", "Frutas e Isotônico na chegada"]
+            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         }
     ];
 
