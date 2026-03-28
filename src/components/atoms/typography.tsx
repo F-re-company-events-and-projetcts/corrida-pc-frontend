@@ -6,7 +6,7 @@ export const typographyVariants = cva("text-foreground", {
     variants: {
         variant: {
             h1: "text-4xl md:text-6xl font-extrabold uppercase tracking-tight font-heading",
-            h2: "text-3xl font-bold text-secondary uppercase tracking-tight font-heading",
+            h2: "text-3xl md:text-4xl font-black text-secondary font-heading",
             h3: "text-xl font-bold text-secondary uppercase font-heading",
             p: "text-base font-normal text-muted-foreground font-sans",
             label: "text-sm font-bold text-secondary uppercase tracking-wider font-sans",
