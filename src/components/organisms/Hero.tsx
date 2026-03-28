@@ -19,9 +19,6 @@ export const Hero = () => {
             </div>
 
             {/* Watermark Element */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none opacity-15">
-                 <Shield className="w-[800px] h-[800px] text-white" />
-            </div>
 
             <div className="relative z-10 container mx-auto px-4 text-center text-white mt-16 md:mt-0 flex flex-col items-center justify-center gap-6">
                 <div className="inline-block bg-primary px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase animate-pulse mb-2">
