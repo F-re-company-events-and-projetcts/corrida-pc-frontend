@@ -3,7 +3,7 @@ export const POLICE_DISCOUNT = 0.20; // 20% discount
 
 export const ROUTES = [
     {
-        distance: "5KM",
+        distance: "4KM",
         name: "CIDADÃO",
         description: "Percurso plano e rápido, ideal para iniciantes e para quem busca recorde pessoal.",
         features: ["Camiseta Poliamida", "Medalha Finisher", "Chip de Cronometragem", "Hidratação"],
