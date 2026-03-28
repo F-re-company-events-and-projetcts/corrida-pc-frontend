@@ -1,57 +1,113 @@
-import React from "react";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { Typography } from "@/components/atoms/typography";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+
+const photos = [
+    "/historygallery/foto-01.jpeg",
+    "/historygallery/foto-02.jpeg",
+    "/historygallery/foto-03.jpeg",
+    "/historygallery/foto-04.jpeg",
+    "/historygallery/foto-05.jpeg",
+    "/historygallery/foto-06.jpeg"
+];
 
 export const HistoryGallery = () => {
-    // Array of Unsplash image URLs for the gallery placeholder
-    const photos = [
-        "https://images.unsplash.com/photo-1552674605-469523170d73?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1530549387789-4c1017266635?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1461896836934-ffe607fa8211?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1526676037777-05a232554f77?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    ];
+    const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+    const handleClose = useCallback(() => setSelectedIdx(null), []);
+    
+    const handleNext = useCallback(() => {
+        if (selectedIdx !== null) setSelectedIdx((selectedIdx + 1) % photos.length);
+    }, [selectedIdx]);
+
+    const handlePrev = useCallback(() => {
+        if (selectedIdx !== null) setSelectedIdx((selectedIdx - 1 + photos.length) % photos.length);
+    }, [selectedIdx]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (selectedIdx === null) return;
+            if (e.key === "Escape") handleClose();
+            if (e.key === "ArrowRight") handleNext();
+            if (e.key === "ArrowLeft") handlePrev();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [selectedIdx, handleClose, handleNext, handlePrev]);
 
     return (
-        <section id="galeria" className="py-24 bg-[#F2F2F2]">
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl font-black text-[#F25D27] mb-4 font-heading uppercase tracking-tight">
-                        Venha fazer parte dessa história
-                    </h2>
-                    <div className="w-24 h-1 bg-[#F24E29] mx-auto rounded-full"></div>
-                    <p className="mt-4 text-gray-500 font-medium max-w-2xl mx-auto">
-                        Relembre os melhores momentos das edições passadas e prepare-se para o que vem por aí.
-                    </p>
+        <section className="py-20 md:py-24 bg-[#F2F2F2] relative w-full">
+            <div className="container mx-auto px-4 text-center">
+                <div className="flex flex-col items-center justify-center mb-16">
+                    <Typography variant="h2" as="h2" className="md:text-4xl font-black mb-2">
+                        VENHA FAZER PARTE DESSA HISTÓRIA!
+                    </Typography>
+                    <div className="w-24 h-1 bg-primary"></div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                    {photos.map((photo, index) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {photos.map((src, idx) => (
                         <div 
-                            key={index} 
-                            className="relative group overflow-hidden rounded-2xl aspect-square md:aspect-video shadow-md hover:shadow-xl transition-all duration-300"
+                            key={idx} 
+                            className="relative aspect-square cursor-pointer overflow-hidden rounded-lg group"
+                            onClick={() => setSelectedIdx(idx)}
                         >
-                            <img 
-                                src={photo} 
-                                alt={`Galeria 2025 - Foto ${index + 1}`} 
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                loading="lazy"
+                            <Image 
+                                src={src} 
+                                alt={`Foto da história ${idx + 1}`} 
+                                fill 
+                                className="object-cover transition-transform duration-500 group-hover:scale-110" 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-start p-6">
-                                <span className="text-white font-bold text-lg drop-shadow-md">Edição 2025</span>
-                            </div>
                         </div>
                     ))}
                 </div>
-                
-                <div className="mt-12 text-center">
-                    <a 
-                        href="#" 
-                        className="inline-block px-8 py-3 rounded-full border-2 border-[#F25D27] text-[#F25D27] font-bold hover:bg-[#F25D27] hover:text-white transition-colors duration-300"
-                    >
-                        VER GALERIA COMPLETA
-                    </a>
-                </div>
             </div>
+
+            {/* Modal */}
+            {selectedIdx !== null && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={handleClose}
+                >
+                    <button 
+                        onClick={handleClose} 
+                        className="absolute top-4 right-4 text-white hover:text-primary transition-colors z-50 p-2"
+                        aria-label="Fechar"
+                    >
+                        <X size={32} />
+                    </button>
+
+                    <div 
+                        className="relative w-full max-w-5xl lg:max-w-7xl h-[70vh] md:h-[80vh] flex items-center justify-center p-0 md:p-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Image 
+                            src={photos[selectedIdx]} 
+                            alt={`Foto selecionada ${selectedIdx + 1}`}
+                            fill
+                            className="object-contain"
+                        />
+
+                        <button 
+                            onClick={handlePrev}
+                            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-3 rounded-full transition-colors"
+                            aria-label="Foto anterior"
+                        >
+                            <ChevronLeft size={36} />
+                        </button>
+                        <button 
+                            onClick={handleNext}
+                            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-3 rounded-full transition-colors"
+                            aria-label="Próxima foto"
+                        >
+                            <ChevronRight size={36} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </section>
     );
 };
