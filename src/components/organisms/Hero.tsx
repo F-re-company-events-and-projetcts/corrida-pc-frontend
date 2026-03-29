@@ -1,5 +1,5 @@
 import { Button } from "@/components/atoms/button";
-import { Shield, Award } from "lucide-react";
+import { Award } from "lucide-react";
 import Image from "next/image";
 
 export const Hero = () => {
@@ -19,10 +19,6 @@ export const Hero = () => {
             </div>
 
             {/* Watermark Element */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none opacity-15">
-                 <Shield className="w-[800px] h-[800px] text-white" />
-            </div>
-
             <div className="relative z-10 container mx-auto px-4 text-center text-white mt-16 md:mt-0 flex flex-col items-center justify-center gap-6">
                 <div className="inline-block bg-primary px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase animate-pulse mb-2">
                     Inscrições em Breve! Fique Atento! 
@@ -39,16 +35,18 @@ export const Hero = () => {
                     <p className="text-lg md:text-2xl font-light tracking-wide text-gray-200 mt-2">
                         Coxim/MS • 27 de Setembro de 2026
                     </p>
-                    <p className="text-base md:text-xl font-medium text-gray-300 italic mt-2">
-                        &quot;Força, Compromisso e Superação em Cada Passada&quot;
+                    <p className="text-base md:text-xl font-medium text-gray-300 italic mt-4 px-4 md:px-0">
+                        <strong>
+                            &quot;Força, Compromisso e Superação em Cada Passada&quot;
+                        </strong>
                     </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4 justify-center items-center w-full max-w-sm md:max-w-2xl mt-6">
-                    <Button asChild className="text-base md:text-lg px-8 py-6 w-full md:w-auto border-1 border-white shadow-orange-500/50 h-auto">
+                <div className="flex flex-col items-center justify-center w-full mt-6 gap-4 max-w-sm md:flex-row md:max-w-2xl">
+                    <Button asChild className="text-base px-8 py-6 w-full box-border border-2 border-white md:text-lg md:w-auto shadow-orange-500/50 h-auto">
                         <a href="#registration">VEJA AS MODALIDADES</a>
                     </Button>
-                    <a href="#registration" className="flex items-center justify-center gap-2 text-white font-semibold hover:text-accent transition-colors w-full md:w-auto p-4 md:p-0">
+                    <a href="#corrida-info" className="flex items-center justify-center gap-2 text-white font-semibold hover:text-accent transition-colors w-full md:w-auto p-4 md:p-0">
                         <Award className="w-5 h-5" />
                         DETALHES DO KIT 
                     </a>

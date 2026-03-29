@@ -20,10 +20,10 @@ export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, feat
     return (
         <div className={cn(
             "relative rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col",
-            isPolice ? "bg-secondary text-white border-secondary" : "bg-white text-gray-800 border-gray-200"
+            isPolice ? "bg-primary text-white border-primary" : "bg-white text-gray-800 border-gray-200"
         )}>
             {isPolice && badge && (
-                <div className="absolute top-0 right-0 bg-accent text-secondary text-xs font-black px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                <div className="absolute top-0 right-0 bg-accent text-primary text-xs font-black px-3 py-1 rounded-bl-lg rounded-tr-lg">
                     {badge}
                 </div>
             )}
@@ -65,7 +65,7 @@ export const PricingCard = ({ title, priceFull, priceDiscount, type, badge, feat
                 className={cn(
                     "w-full py-3 rounded-lg font-bold text-sm tracking-wide transition-colors",
                     isPolice
-                        ? "bg-accent text-secondary hover:bg-white"
+                        ? "bg-accent text-primary hover:bg-white"
                         : "bg-secondary text-white hover:bg-primary"
                 )}
             >

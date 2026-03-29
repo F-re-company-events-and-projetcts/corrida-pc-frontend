@@ -22,8 +22,8 @@ export const Header = () => {
 
     const navLinks = [
         { name: "Em Breve", href: "#", disabled: true, onClick: () => alert("Detalhes serão divulgados em breve") },
-        { name: "Entrega de Kit", href: "#" },
-        { name: "Galeria 2025", href: "#galeria" },
+        { name: "Entrega de Kit", href: "#corrida-info" },
+        { name: "Galeria 2025", href: "#galeria-fotos" },
         { name: "Corredores", href: "#", onClick: handleCorredoresClick },
     ];
 
@@ -34,14 +34,10 @@ export const Header = () => {
         )}>
             <div className="container mx-auto px-4 md:px-8 flex justify-between items-center">
                 <div className="flex items-center gap-2 relative z-10">
+                    {/* Container */}
                     <div className="bg-white/90 p-1.5 rounded-lg shadow-sm">
                         <img src="/logo.jpeg" alt="Logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
                     </div>
-                </div>
-
-                {/* Header Watermark Shield - Absolute to right */}
-                <div className="absolute right-10 top-1/2 transform -translate-y-1/2 opacity-5 pointer-events-none hidden md:block z-0">
-                    <Shield className="w-24 h-24 text-secondary" />
                 </div>
 
                 {/* Desktop Menu */}

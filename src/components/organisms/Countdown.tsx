@@ -16,7 +16,7 @@ export const Countdown = () => {
                 <CountdownTimer targetDate={eventDate} />
 
                 <p className="mt-8 text-xl text-gray-600 font-medium max-w-2xl mx-auto">
-                    Faltam poucos dias para você fazer história nas ruas de <span className="text-secondary font-bold">Coxim</span>
+                    Para você fazer <strong>história</strong> nas ruas de <span className="text-secondary font-bold">Coxim!</span>
                 </p>
             </div>
         </section>
