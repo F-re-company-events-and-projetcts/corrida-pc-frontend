@@ -2,8 +2,8 @@ import { CountdownTimer } from "@/components/molecules/countdown-timer";
 import { Typography } from "@/components/atoms/typography";
 
 export const Countdown = () => {
-    // Data do evento: 09 de Setembro de 2026
-    const eventDate = new Date('2026-09-09T07:00:00').getTime();
+    // Data do evento: 27 de Setembro de 2026
+    const eventDate = new Date('2026-09-27T07:00:00').getTime();
 
     return (
         <section className="py-20 bg-white relative">
