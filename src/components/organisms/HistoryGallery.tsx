@@ -39,7 +39,7 @@ export const HistoryGallery = () => {
     }, [selectedIdx, handleClose, handleNext, handlePrev]);
 
     return (
-        <section className="py-20 md:py-24 bg-[#F2F2F2] relative w-full">
+        <section className="py-20 md:py-24 bg-[#F2F2F2] relative w-full" id="galeria-fotos">
             <div className="container mx-auto px-4 text-center">
                 <div className="flex flex-col items-center justify-center mb-16">
                     <Typography variant="h2" as="h2" className="md:text-4xl font-black mb-2">

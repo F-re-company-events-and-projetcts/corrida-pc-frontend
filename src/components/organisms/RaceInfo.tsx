@@ -3,7 +3,7 @@ import { Typography } from "@/components/atoms/typography";
 
 export const RaceInfo = () => {
     return (
-        <section className="py-20 md:py-24 bg-[#F2F2F2] w-full">
+        <section className="py-20 md:py-24 bg-[#F2F2F2] w-full" id="corrida-info">
             <div className="container mx-auto px-4 flex flex-col items-center mb-16">
                 <Typography variant="h2" as="h2" className="md:text-4xl font-black text-center mb-2">
                     MANTENHA-SE INFORMADO!

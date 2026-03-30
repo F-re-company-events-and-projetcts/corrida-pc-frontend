@@ -1,4 +1,3 @@
-import { CourseCard } from "@/components/molecules/course-card";
 import Script from "next/script";
 import { Typography } from "@/components/atoms/typography";
 
@@ -7,7 +6,7 @@ export const Routes = () => {
         <section className="py-20 bg-[#F3F4F6]">
             <div className="container mx-auto px-4">
                 <div className="flex flex-col items-center mb-16">
-                    <Typography variant="h2" as="h2" className="md:text-4xl font-black mb-2">CONHEÇA OS PERCURSOS</Typography>
+                    <Typography variant="h2" as="h2" className="text-center md:text-4xl font-black mb-2">CONHEÇA OS PERCURSOS</Typography>
                     <div className="w-24 h-1 bg-primary"></div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-[2fr] gap-12 items-start">

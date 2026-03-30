@@ -34,30 +34,29 @@ export const Registration = () => {
     const modalidades: Modalidade[] = [
         {
             id: 1,
-            title: "4KM - CIDADÃO",
+            title: "CAMINHADA 4KM - CIDADÃO",
             distance: "4KM",
             priceFull: 90.00,
             priceDiscount: 80.00,
             type: "public",
             lotText: "1º Lote",
-            subtext: "somente medalha de participação",
             features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         },
         {
             id: 2,
-            title: "4KM - POLICIAL",
+            title: "CAMINHADA 4KM - POLICIAL",
             distance: "4KM",
             priceFull: 80.00,
             priceDiscount: 80.00,
             type: "police",
             badge: "LOTE ÚNICO",
-            subtext: "esta categoria abrange todas as forças policiais, somente medalha de participação",
+            subtext: "esta categoria abrange todas as forças policiais",
             lotText: "Valor Fixo",
             features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
         },
         {
             id: 3,
-            title: "10KM - CIDADÃO",
+            title: "CORRIDA 10KM - CIDADÃO",
             distance: "10KM",
             priceFull: 90.00,
             priceDiscount: 80.00,
@@ -67,7 +66,7 @@ export const Registration = () => {
         },
         {
             id: 4,
-            title: "10KM - POLICIAL",
+            title: "CORRIDA 10KM - POLICIAL",
             distance: "10KM",
             priceFull: 80.00,
             priceDiscount: 80.00,
@@ -148,9 +147,10 @@ export const Registration = () => {
 
     return (
         <section id="registration" className="py-20 bg-white">
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-12">
-                    <Typography variant="h2" as="h2" className="md:text-4xl font-black mb-4">ESCOLHA SUA MODALIDADE</Typography>
+            <div className="container mx-auto px-6">
+                <div className="flex flex-col items-center text-center mb-14">
+                    <Typography variant="h2" as="h2" className="font-black mb-4 md:text-4xl ">ESCOLHA SUA MODALIDADE</Typography>
+                    <div className="w-24 h-1 bg-primary"></div>
                     <p className="text-gray-500 font-medium">Inscrições abertas de 08/06/2025 até 05/08/2025</p>
                 </div>
 

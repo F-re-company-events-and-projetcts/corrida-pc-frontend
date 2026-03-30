@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 export type ButtonProps = ShadcnButtonProps;
 
 export const Button = ({ className, variant = "default", size = "default", ...props }: ButtonProps) => {
-    const baseStyles = "font-bold uppercase tracking-wide transition-all duration-300 transform shadow-lg hover:-translate-y-1";
+    const baseStyles = "font-bold uppercase tracking-wide transition-all duration-300 shadow-lg hover:-translate-y-1";
 
     // Custom shadows based on variant
     const variantStyles = {
