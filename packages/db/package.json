@@ -9,14 +9,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "devDependencies": {
-    "@types/node": "^20",
-    "typescript": "^5"
-  },
   "dependencies": {
     "@prisma/client": "^6"
   },
   "devDependencies": {
-    "prisma": "^6"
+    "@types/node": "^20",
+    "prisma": "^6",
+    "typescript": "^5"
   }
 }

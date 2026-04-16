@@ -1,6 +1,7 @@
 {
   "name": "corrida-pc",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
