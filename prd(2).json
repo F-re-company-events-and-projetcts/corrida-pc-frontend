@@ -1,0 +1,410 @@
+{
+  "project": "Corrida do Policial Civil — Plataforma de Inscrições",
+  "branchName": "ralph/plataforma-inscricoes-mvp",
+  "description": "Construção do monorepo completo: setup inicial, schema de banco, API de inscrição com Mercado Pago (PIX + Cartão), fluxo de inscrição no frontend e painel admin.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Setup do monorepo com pnpm workspaces e Turborepo",
+      "description": "Como desenvolvedor, quero o monorepo estruturado com pnpm workspaces e Turborepo para que os três apps (web, api, admin) compartilhem pacotes e tenham build coordenado.",
+      "acceptanceCriteria": [
+        "Arquivo pnpm-workspace.yaml na raiz referenciando apps/* e packages/*",
+        "turbo.json configurado com pipelines: build, dev, lint, typecheck",
+        "package.json raiz com scripts: dev, build, lint, typecheck, db:migrate, db:generate",
+        "Pastas criadas: apps/web, apps/api, apps/admin, packages/db, packages/types, packages/validations, packages/email",
+        "apps/web recebe o conteúdo do repositório frontend existente",
+        "apps/api e apps/admin inicializados como projetos Next.js 14 vazios",
+        "pnpm install roda sem erros na raiz",
+        "turbo dev sobe os três apps em paralelo",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "O conteúdo de apps/web já existe no repositório atual — mover para a pasta correta sem quebrar imports."
+    },
+    {
+      "id": "US-002",
+      "title": "Correções no frontend existente (apps/web)",
+      "description": "Como desenvolvedor, quero corrigir as inconsistências do código atual do frontend para que ele reflita as decisões do PRD v2.",
+      "acceptanceCriteria": [
+        "Em mocks/landing-page-data.ts: distância da rota avançada alterada de '8KM' para '10KM'",
+        "Em mocks/landing-page-data.ts: POLICE_DISCOUNT removido — substituído por preço fixo R$ 80",
+        "Preços dos lotes atualizados para: R$ 80,00 (lote 1), R$ 85,00 (lote 2), R$ 90,00 (lote 3)",
+        "Registration.tsx: botão 'Inscrever' navega para /inscricao em vez de abrir modal",
+        "packages/types criado com interface Categoria, Lote, Participante, Pedido exportadas",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Não apagar o componente Registration.tsx — apenas alterar o onClick do botão."
+    },
+    {
+      "id": "US-003",
+      "title": "Schema Prisma e configuração do banco (packages/db)",
+      "description": "Como desenvolvedor, quero o schema Prisma completo e o cliente configurado para que todos os apps usem o mesmo banco PostgreSQL.",
+      "acceptanceCriteria": [
+        "packages/db/prisma/schema.prisma criado com todos os models do CLAUDE.md: Categoria, Lote, Pedido, Participante, Pagamento, AdminUser, AdminLog",
+        "Todos os enums criados: TipoCategoria, StatusPedido, MetodoPagamento, TamanhoCamiseta, AdminRole",
+        "packages/db/src/client.ts exporta PrismaClient singleton (padrão recomendado para Next.js)",
+        "packages/db/package.json exporta o cliente: '.' -> './src/client.ts'",
+        "Migration inicial gerada com prisma migrate dev --name init",
+        "Seed script cria 4 categorias (4KM Cidadão, 4KM Policial, 10KM Cidadão, 10KM Policial) e 2 lotes",
+        ".env.example na raiz com DATABASE_URL vazio",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "CPF no model Participante é string — armazenamento como hash feito na camada de serviço, não no Prisma."
+    },
+    {
+      "id": "US-004",
+      "title": "Schemas Zod compartilhados (packages/validations)",
+      "description": "Como desenvolvedor, quero os schemas Zod de validação compartilhados para que frontend e backend usem as mesmas regras sem duplicação.",
+      "acceptanceCriteria": [
+        "packages/validations/src/inscricao.ts exporta InscricaoSchema com campos: nome (min 3), cpf (validação de dígito verificador), dataNascimento, telefone, email, contatoEmergencia, tamanhoCamiseta, categoriaId",
+        "Função validarCPF implementada e testada para CPFs válidos e inválidos",
+        "packages/validations/src/pedido.ts exporta CriarPedidoSchema validando array de inscrições (min 1, max 5) e metodoPagamento",
+        "Todos os schemas exportados de packages/validations/src/index.ts",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "validarCPF deve checar formato (11 dígitos) e os dois dígitos verificadores — não apenas regex."
+    },
+    {
+      "id": "US-005",
+      "title": "Endpoint GET /api/v1/categorias",
+      "description": "Como frontend, quero buscar categorias com vagas e lote ativo para exibir preços corretos na landing page e no fluxo de inscrição.",
+      "acceptanceCriteria": [
+        "apps/api/src/app/api/v1/categorias/route.ts implementado",
+        "Retorna array de categorias com: id, nome, percursoKm, tipo, vagasTotal, vagasOcupadas, vagasDisponiveis (calculado), precoAtual (80 para POLICIAL; precoCidadao do lote ativo para CIDADAO)",
+        "Se nenhum lote ativo, campo precoAtual retorna null e CTA deve ficar desabilitado",
+        "Response com Cache-Control: max-age=30 (dados mudam pouco, mas precisam ser frescos)",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Lote ativo = lote com ativo=true E dataInicio <= now <= dataFim."
+    },
+    {
+      "id": "US-006",
+      "title": "Landing page consome API de categorias (apps/web)",
+      "description": "Como visitante, quero ver os preços e vagas atuais na landing page para que a informação seja sempre precisa.",
+      "acceptanceCriteria": [
+        "Registration.tsx e pricing-card.tsx consomem GET /api/v1/categorias via fetch (server component ou SWR)",
+        "Preços exibidos refletem o lote ativo retornado pela API",
+        "Categoria com vagasDisponiveis === 0 exibe badge 'Esgotado' e botão desabilitado",
+        "Fallback de loading exibe skeleton enquanto API responde",
+        "mocks/landing-page-data.ts não é mais usado para preços (apenas para dados estáticos como datas do evento)",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "A URL da API deve vir de NEXT_PUBLIC_APP_URL + /api/v1 — não hardcoded."
+    },
+    {
+      "id": "US-007",
+      "title": "Step 1 do fluxo de inscrição — seleção de categoria",
+      "description": "Como inscrito, quero selecionar minha categoria de corrida para iniciar minha inscrição.",
+      "acceptanceCriteria": [
+        "Rota /inscricao criada em apps/web com layout de progresso (5 steps)",
+        "Step 1 lista categorias disponíveis da API com preço e vagas",
+        "Seleção de categoria POLICIAL exibe box amarelo: 'Você está se inscrevendo na categoria Policial. A comprovação do vínculo funcional será realizada presencialmente no check-in.'",
+        "Categoria esgotada é exibida com estilo desabilitado e não pode ser selecionada",
+        "Estado do step 1 persistido em contexto React (não URL)",
+        "Botão 'Continuar' só habilita após seleção",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Usar o componente PricingCard existente como base visual, adaptando o onClick."
+    },
+    {
+      "id": "US-008",
+      "title": "Step 2 do fluxo de inscrição — formulário de inscrito",
+      "description": "Como inscrito, quero preencher meus dados pessoais e opcionalmente adicionar mais inscritos.",
+      "acceptanceCriteria": [
+        "Formulário com campos obrigatórios: nome, CPF, dataNascimento, telefone, email, contatoEmergencia, tamanhoCamiseta, categoriaId",
+        "Validação em tempo real com schemas Zod de packages/validations",
+        "CPF validado com dígito verificador — exibe erro inline se inválido",
+        "Botão 'Adicionar outro inscrito' adiciona novo formulário (máximo 5)",
+        "Cada inscrito adicional tem seletor de categoria próprio",
+        "CPF duplicado dentro da mesma transação exibe erro: 'Este CPF já foi adicionado neste pedido'",
+        "Botão 'Remover' em inscritos adicionais (não no primeiro)",
+        "Todos os campos salvos no contexto React ao avançar",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Usar Input e Checkbox de apps/web/src/components/atoms/. Não criar novos componentes de form."
+    },
+    {
+      "id": "US-009",
+      "title": "Step 3 do fluxo de inscrição — revisão e aceite",
+      "description": "Como inscrito, quero revisar meu pedido e aceitar os termos antes de pagar.",
+      "acceptanceCriteria": [
+        "Exibe lista de inscritos com nome, categoria e preço individual",
+        "Exibe total do pedido calculado corretamente (POLICIAL=80 fixo, CIDADAO=preço do lote)",
+        "Seletor de método de pagamento: PIX ou Cartão",
+        "Checkbox 'Li e aceito o regulamento' com link para regulamento (abre em nova aba)",
+        "Se qualquer inscrito for categoria POLICIAL: checkbox adicional 'Declaro ser membro de força de segurança pública e estou ciente que a comprovação será feita no check-in'",
+        "Botão 'Confirmar e ir para pagamento' desabilitado até todos os checkboxes marcados",
+        "Botão 'Editar' em cada inscrito volta para Step 2 com dados preenchidos",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "O link do regulamento pode ser uma URL placeholder por agora — será atualizado pelo cliente."
+    },
+    {
+      "id": "US-010",
+      "title": "Endpoint POST /api/v1/inscricao — criação do pedido e PIX",
+      "description": "Como backend, quero criar um pedido e gerar o QR Code PIX sem persistir os participantes ainda.",
+      "acceptanceCriteria": [
+        "apps/api/src/app/api/v1/inscricao/route.ts implementado",
+        "Valida body com CriarPedidoSchema de packages/validations",
+        "Verifica disponibilidade de vagas para cada categoria solicitada (race condition: usar SELECT FOR UPDATE ou transação)",
+        "Se alguma categoria estiver esgotada, retorna 409 com mensagem identificando qual categoria",
+        "Cria Pedido com status AGUARDANDO_PAGAMENTO e expiresAt = now + 30min",
+        "Chama API do Mercado Pago para gerar pagamento PIX",
+        "Retorna: pedidoId, qrCode, qrCodeBase64, expiresAt",
+        "Participantes NÃO são criados neste endpoint",
+        "Rate limiting: 10 requisições por minuto por IP (usar upstash/ratelimit ou similar)",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "external_reference do Mercado Pago deve ser o pedidoId — usado para correlacionar no webhook."
+    },
+    {
+      "id": "US-011",
+      "title": "Step 4a — tela de pagamento PIX com polling",
+      "description": "Como inscrito, quero ver o QR Code PIX e saber quando meu pagamento for confirmado.",
+      "acceptanceCriteria": [
+        "Exibe QR Code (imagem base64) e código copia-cola",
+        "Timer regressivo mostrando tempo restante até expiração (30min)",
+        "Polling no endpoint GET /api/v1/inscricao/[id] a cada 3 segundos",
+        "Ao receber status 'PAGO', navega automaticamente para /inscricao/confirmacao",
+        "Ao expirar (timer chega a zero ou status 'EXPIRADO'), exibe mensagem e botão 'Tentar novamente' que volta ao Step 1",
+        "Botão 'Copiar código' copia o código PIX para o clipboard com feedback visual",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "O polling deve parar quando o componente for desmontado (cleanup no useEffect)."
+    },
+    {
+      "id": "US-012",
+      "title": "Endpoint GET /api/v1/inscricao/[id] — status do pedido",
+      "description": "Como frontend, quero consultar o status de um pedido para que o polling de PIX funcione.",
+      "acceptanceCriteria": [
+        "apps/api/src/app/api/v1/inscricao/[id]/route.ts implementado",
+        "Retorna: id, status, expiresAt, metodoPagamento, total",
+        "Se status PAGO, inclui também: participantes (nome, categoria, numeroPeito se disponível)",
+        "Retorna 404 se pedido não encontrado",
+        "Sem autenticação necessária — acessível com apenas o ID do pedido",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "O ID do pedido é um CUID — suficientemente difícil de adivinhar para não precisar de auth."
+    },
+    {
+      "id": "US-013",
+      "title": "Webhook Mercado Pago — confirmar pagamento e persistir inscrição",
+      "description": "Como sistema, quero processar o webhook do Mercado Pago para confirmar o pagamento e persistir os participantes.",
+      "acceptanceCriteria": [
+        "apps/api/src/app/api/v1/webhook/mercadopago/route.ts implementado",
+        "Valida assinatura x-signature antes de qualquer processamento (retorna 401 se inválida)",
+        "Verifica idempotência: se paymentId já existe em Pagamento, retorna 200 sem reprocessar",
+        "Apenas processa eventos do tipo 'payment' com status 'approved'",
+        "Em transação Prisma: cria Participantes, cria Pagamento, atualiza Pedido para PAGO, incrementa vagasOcupadas em cada Categoria",
+        "Após transação: dispara e-mail de confirmação via packages/email (async, não bloqueia response)",
+        "Retorna 200 em menos de 5 segundos (Mercado Pago faz retry se não receber 200)",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "CPF deve ser armazenado como hash bcrypt (salt rounds: 10) — nunca em plain text."
+    },
+    {
+      "id": "US-014",
+      "title": "Step 4b — pagamento por Cartão de Crédito",
+      "description": "Como inscrito, quero pagar com cartão de crédito de forma segura.",
+      "acceptanceCriteria": [
+        "SDK do Mercado Pago (MercadoPago.js) carregado via script tag no cliente",
+        "Campos de cartão renderizados pelo SDK (não campos HTML próprios)",
+        "Seletor de número de parcelas com tabela de juros do Mercado Pago",
+        "Submit envia token ao backend (nunca dados brutos do cartão)",
+        "Endpoint POST /api/v1/inscricao/[id]/cartao criado em apps/api para processar o token",
+        "Aprovado: navega para /inscricao/confirmacao",
+        "Recusado: exibe mensagem de erro do gateway e permite nova tentativa",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "NEXT_PUBLIC_MP_PUBLIC_KEY deve ser usada no SDK do cliente — nunca o access token."
+    },
+    {
+      "id": "US-015",
+      "title": "Step 5 — tela de confirmação da inscrição",
+      "description": "Como inscrito, quero ver a confirmação da minha inscrição com todos os detalhes.",
+      "acceptanceCriteria": [
+        "Rota /inscricao/confirmacao exibe: número do pedido, lista de inscritos com nome e categoria, total pago, data e hora da confirmação",
+        "Exibe instrução de retirada de kit: 'Kit disponível em 26/Set/2026 das 08h às 18h na Delegacia de Polícia Civil — Coxim'",
+        "Botão 'Voltar ao início' navega para /",
+        "Contexto de inscrição limpo após exibir confirmação",
+        "Página acessível via /pedido/[id] mesmo sem o contexto (consulta a API)",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "A página /pedido/[id] é a versão pública de consulta — sem autenticação, com o ID do pedido."
+    },
+    {
+      "id": "US-016",
+      "title": "E-mail de confirmação de inscrição (packages/email)",
+      "description": "Como inscrito, quero receber um e-mail de confirmação com os detalhes da minha inscrição.",
+      "acceptanceCriteria": [
+        "Template React Email em packages/email/src/templates/ConfirmacaoInscricao.tsx criado",
+        "E-mail contém: nome do inscrito, categoria, percurso, data da corrida (27/Set/2026), instrução de retirada de kit, número do pedido",
+        "Se múltiplos inscritos no pedido, lista todos",
+        "packages/email/src/send.ts exporta enviarConfirmacao(pedido) usando Resend",
+        "Chamado no webhook após persistência bem-sucedida (fire-and-forget com try/catch)",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Usar react-email para composição. Testar preview com 'email dev' antes de integrar com Resend."
+    },
+    {
+      "id": "US-017",
+      "title": "Worker de expiração de PIX",
+      "description": "Como sistema, quero limpar pedidos PIX expirados para liberar vagas e manter o banco limpo.",
+      "acceptanceCriteria": [
+        "apps/api/src/app/api/v1/cron/expirar-pix/route.ts implementado como Vercel Cron (a cada 15 min)",
+        "Busca pedidos com status AGUARDANDO_PAGAMENTO e expiresAt < now",
+        "Atualiza status para EXPIRADO",
+        "Não há vagas a liberar (vagas só são decrementadas após pagamento confirmado)",
+        "Rota protegida com CRON_SECRET header (Vercel injeta automaticamente)",
+        "vercel.json na raiz de apps/api com configuração: { crons: [{ path: '/api/v1/cron/expirar-pix', schedule: '*/15 * * * *' }] }",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "Confirmar: vagas são ocupadas APENAS no webhook de pagamento confirmado — o cron só muda o status."
+    },
+    {
+      "id": "US-018",
+      "title": "Autenticação do painel admin (apps/admin)",
+      "description": "Como admin, quero fazer login seguro para acessar o painel.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/login/page.tsx com formulário de e-mail + senha",
+        "Endpoint POST /api/auth em apps/admin valida credenciais contra AdminUser no banco",
+        "Sessão via JWT (next-auth ou jose) com expiração de 8h",
+        "Middleware em apps/admin/src/middleware.ts redireciona /login se não autenticado",
+        "Todas as rotas exceto /login protegidas pelo middleware",
+        "Seed do banco cria um AdminUser inicial com e-mail e senha do ADMIN_SECRET env var",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "Senha armazenada como bcrypt hash. Não usar next-auth OAuth — apenas credentials provider."
+    },
+    {
+      "id": "US-019",
+      "title": "Dashboard admin — totalizadores",
+      "description": "Como admin, quero ver um dashboard com os principais números da corrida.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/dashboard/page.tsx com cards de totalizadores",
+        "Totalizadores exibidos: total de inscritos (pagos), inscritos por categoria, receita total, vagas restantes por categoria, pedidos pendentes (PIX não pago), camisetas comprometidas por tamanho",
+        "Dados carregados via Server Component com consulta direta ao Prisma",
+        "Atualização automática a cada 30s (via revalidate ou client-side polling)",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Lista de participantes com filtros e busca",
+      "description": "Como admin, quero listar e filtrar participantes para encontrar qualquer inscrito rapidamente.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/participantes/page.tsx com tabela paginada (20 por página)",
+        "Colunas: nome, CPF (mascarado: ***.***.***-**), categoria, camiseta, status pagamento, data inscrição",
+        "Filtros: categoria (dropdown), status pagamento (dropdown), tamanho camiseta (dropdown)",
+        "Busca por nome ou e-mail (não busca por CPF — está em hash)",
+        "Exportação CSV com todos os dados não-sensíveis (sem CPF hash)",
+        "Cada linha tem link para detalhe /participantes/[id]",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "CPF exibido mascarado no admin também. Busca por CPF não é possível (está em hash) — documentar isso."
+    },
+    {
+      "id": "US-021",
+      "title": "Detalhe e edição do participante",
+      "description": "Como admin, quero ver todos os dados de um participante e corrigir informações se necessário.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/participantes/[id]/page.tsx exibe todos os campos do participante",
+        "Exibe: nome, data nascimento, telefone, e-mail, contato emergência, categoria, camiseta, status pagamento, data confirmação, número de peito (se disponível)",
+        "Botão 'Editar' abre formulário inline para alteração de: nome, telefone, e-mail, contatoEmergencia, tamanhoCamiseta",
+        "Botão 'Alterar status de pagamento' permite marcar como PAGO ou CANCELADO com campo obrigatório 'Motivo'",
+        "Toda alteração registrada em AdminLog com adminId, campo alterado, valor anterior, valor novo",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "Alteração de status para PAGO deve também incrementar vagasOcupadas da categoria (caso manual)."
+    },
+    {
+      "id": "US-022",
+      "title": "Módulo de check-in presencial",
+      "description": "Como organizador, quero registrar o check-in de corredores no dia anterior à corrida.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/checkin/page.tsx com campo de busca por nome ou e-mail",
+        "Resultado da busca exibe: foto do card com nome, categoria, camiseta, status de pagamento, número de peito",
+        "Botão 'Registrar check-in' só disponível para participantes com status PAGO",
+        "Ao registrar check-in: campo checkinRealizadoEm preenchido com timestamp atual",
+        "Confirmação de tamanho de camiseta: exibe o tamanho registrado com botão 'Confirmar' ou dropdown para correção",
+        "Participante com check-in já realizado exibe badge 'Check-in realizado' e timestamp",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Importação de planilha de numeração de peito",
+      "description": "Como admin, quero importar a planilha da empresa de cronometragem para vincular números de peito aos corredores.",
+      "acceptanceCriteria": [
+        "apps/admin/src/app/checkin/importar/page.tsx com upload de arquivo CSV ou XLSX",
+        "Formato esperado da planilha: colunas numero_peito (int) e categoria (string matching nome da categoria)",
+        "Preview dos primeiros 10 registros antes de confirmar importação",
+        "Ao confirmar: vincula números de peito aos participantes de cada categoria por ordem de createdAt (primeiro inscrito recebe o menor número)",
+        "Exibe relatório pós-importação: total vinculados, categorias processadas, erros (se houver)",
+        "Participantes sem número de peito listados em /checkin/importar como pendentes",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "Usar xlsx ou papaparse para leitura do arquivo no cliente antes do upload. Enviar JSON ao backend."
+    }
+  ]
+}
