@@ -1,0 +1,83 @@
+diff --git a/packages/validations/src/cpf.ts b/packages/validations/src/cpf.ts
+new file mode 100644
+index 0000000..e3d3fd9
+--- /dev/null
++++ b/packages/validations/src/cpf.ts
+@@ -0,0 +1,17 @@
++export function validarCPF(cpf: string): boolean {
++  const digits = cpf.replace(/\D/g, "");
++
++  if (digits.length !== 11) return false;
++  if (/^(\d)\1{10}$/.test(digits)) return false;
++
++  const calc = (factor: number) => {
++    let sum = 0;
++    for (let i = 0; i < factor - 1; i++) {
++      sum += parseInt(digits[i]) * (factor - i);
++    }
++    const remainder = (sum * 10) % 11;
++    return remainder === 10 || remainder === 11 ? 0 : remainder;
++  };
++
++  return calc(10) === parseInt(digits[9]) && calc(11) === parseInt(digits[10]);
++}
+diff --git a/packages/validations/src/index.ts b/packages/validations/src/index.ts
+index e69de29..c62a5e5 100644
+--- a/packages/validations/src/index.ts
++++ b/packages/validations/src/index.ts
+@@ -0,0 +1,5 @@
++export { validarCPF } from "./cpf";
++export { InscricaoSchema } from "./inscricao";
++export type { InscricaoInput } from "./inscricao";
++export { CriarPedidoSchema } from "./pedido";
++export type { CriarPedidoInput } from "./pedido";
+diff --git a/packages/validations/src/inscricao.ts b/packages/validations/src/inscricao.ts
+new file mode 100644
+index 0000000..bbc55ab
+--- /dev/null
++++ b/packages/validations/src/inscricao.ts
+@@ -0,0 +1,24 @@
++import { z } from "zod";
++import { validarCPF } from "./cpf";
++
++const TamanhoCamisetaEnum = z.enum(["PP", "P", "M", "G", "GG", "XGG"]);
++
++export const InscricaoSchema = z.object({
++  nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
++  cpf: z
++    .string()
++    .refine(validarCPF, { message: "CPF inválido" }),
++  dataNascimento: z.string().datetime({ message: "Data de nascimento inválida" }),
++  telefone: z
++    .string()
++    .min(10, "Telefone deve ter no mínimo 10 dígitos")
++    .regex(/^\d+$/, "Telefone deve conter apenas números"),
++  email: z.string().email("E-mail inválido"),
++  contatoEmergencia: z
++    .string()
++    .min(3, "Contato de emergência deve ter no mínimo 3 caracteres"),
++  tamanhoCamiseta: TamanhoCamisetaEnum,
++  categoriaId: z.string().cuid("ID de categoria inválido"),
++});
++
++export type InscricaoInput = z.infer<typeof InscricaoSchema>;
+diff --git a/packages/validations/src/pedido.ts b/packages/validations/src/pedido.ts
+new file mode 100644
+index 0000000..9825c72
+--- /dev/null
++++ b/packages/validations/src/pedido.ts
+@@ -0,0 +1,14 @@
++import { z } from "zod";
++import { InscricaoSchema } from "./inscricao";
++
++const MetodoPagamentoEnum = z.enum(["PIX", "CARTAO"]);
++
++export const CriarPedidoSchema = z.object({
++  inscricoes: z
++    .array(InscricaoSchema)
++    .min(1, "Deve haver pelo menos 1 inscrito")
++    .max(5, "Máximo de 5 inscritos por pedido"),
++  metodoPagamento: MetodoPagamentoEnum,
++});
++
++export type CriarPedidoInput = z.infer<typeof CriarPedidoSchema>;
