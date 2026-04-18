@@ -481,3 +481,27 @@ Variável de ambiente `DATABASE_URL` (Neon) configurada nos três projetos.
 - Tipos compartilhados: `packages/types/src/index.ts`
 - Componentes atom: `apps/web/src/components/atoms/`
 - Regras de preço: `packages/types/src/pricing.ts`
+---
+
+## Estado Atual do Projeto (atualizar a cada fase)
+
+### Concluído
+- US-001: monorepo pnpm workspaces + Turborepo
+- US-002: correções frontend (preços, distâncias, routing /inscricao)
+- US-003: schema Prisma completo, client singleton, seed, migration aplicada no Neon
+
+### Banco de Dados
+- Neon PostgreSQL — connection string em `.env.local` (DATABASE_URL)
+- Migration aplicada: `20260416000000_init`
+- Seed: `pnpm db:seed` cria 4 categorias + 2 lotes
+
+### Convenções de Import
+- Prisma client: `import { prisma } from "@corrida/db"`
+- Tipos Prisma: `import { Participante, StatusPedido } from "@corrida/db"`
+- Tipos locais: `import { ... } from "@corrida/types"`
+- Validações Zod: `import { ... } from "@corrida/validations"`
+
+### Porta dos apps em dev
+- web: 3000
+- api: 3001  
+- admin: 3002

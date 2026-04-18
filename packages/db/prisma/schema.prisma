@@ -6,3 +6,129 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum TipoCategoria {
+  CIDADAO
+  POLICIAL
+}
+
+enum StatusPedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  RECUSADO
+  EXPIRADO
+  CANCELADO
+}
+
+enum MetodoPagamento {
+  PIX
+  CARTAO
+}
+
+enum TamanhoCamiseta {
+  PP
+  P
+  M
+  G
+  GG
+  XGG
+}
+
+enum AdminRole {
+  TOTAL
+  OPERACIONAL
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model Categoria {
+  id            String         @id @default(cuid())
+  nome          String
+  percursoKm    Int
+  tipo          TipoCategoria
+  vagasTotal    Int            @default(150)
+  vagasOcupadas Int            @default(0)
+  participantes Participante[]
+  createdAt     DateTime       @default(now())
+}
+
+model Lote {
+  id            String   @id @default(cuid())
+  nome          String
+  precoCidadao  Float
+  ativo         Boolean  @default(false)
+  dataInicio    DateTime
+  dataFim       DateTime
+  createdAt     DateTime @default(now())
+}
+
+model Pedido {
+  id              String          @id @default(cuid())
+  total           Float
+  status          StatusPedido    @default(AGUARDANDO_PAGAMENTO)
+  metodoPagamento MetodoPagamento
+  paymentId       String?         @unique
+  expiresAt       DateTime?
+  participantes   Participante[]
+  pagamento       Pagamento?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Participante {
+  id                String          @id @default(cuid())
+  nome              String
+  cpf               String
+  dataNascimento    DateTime
+  telefone          String
+  email             String
+  contatoEmergencia String
+  tamanhoCamiseta   TamanhoCamiseta
+  categoriaId       String
+  categoria         Categoria       @relation(fields: [categoriaId], references: [id])
+  pedidoId          String
+  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
+  numeroPeito       Int?
+  checkinRealizadoEm DateTime?
+  createdAt         DateTime        @default(now())
+
+  @@index([cpf])
+  @@index([email])
+  @@index([categoriaId])
+}
+
+model Pagamento {
+  id                String          @id @default(cuid())
+  pedidoId          String          @unique
+  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
+  paymentIdGateway  String          @unique
+  valor             Float
+  metodo            MetodoPagamento
+  status            String
+  webhookRecebidoEm DateTime?
+  createdAt         DateTime        @default(now())
+}
+
+model AdminUser {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  senha     String
+  nome      String
+  role      AdminRole  @default(OPERACIONAL)
+  logs      AdminLog[]
+  createdAt DateTime   @default(now())
+}
+
+model AdminLog {
+  id            String    @id @default(cuid())
+  adminId       String
+  admin         AdminUser @relation(fields: [adminId], references: [id])
+  acao          String
+  entidade      String
+  entidadeId    String
+  valorAnterior String?
+  valorNovo     String?
+  createdAt     DateTime  @default(now())
+}
