@@ -1,71 +1,33 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import { PricingCard } from "@/components/molecules/pricing-card";
 import { Typography } from "@/components/atoms/typography";
+import { fetchCategorias } from "@/lib/api";
+import type { Categoria } from "@corrida/types";
 
-type Modalidade = {
-    id: number;
-    title: string;
-    distance: "4KM" | "10KM";
-    priceFull: number;
-    priceDiscount: number;
-    type: "public" | "police"
-    badge?: string;
-    lotText?: string;
-    subtext?: string;
-    features: string[];
-};
+const FEATURES = [
+    "Camiseta do Evento",
+    "Medalha de participação",
+    "Chip de cronometragem",
+    "Hidratação no percurso",
+    "Frutas e Isotônico na chegada",
+];
 
-export const Registration = () => {
-    const router = useRouter();
+function categoriaToPricingCardProps(cat: Categoria) {
+    const isPolice = cat.tipo === "POLICIAL";
+    return {
+        id: cat.id,
+        title: cat.nome.toUpperCase(),
+        priceAtual: cat.precoAtual,
+        type: (isPolice ? "police" : "public") as "police" | "public",
+        badge: isPolice ? "LOTE ÚNICO" : undefined,
+        subtext: isPolice ? "esta categoria abrange todas as forças policiais" : undefined,
+        lotText: isPolice ? "Valor Fixo" : "Lote Ativo",
+        features: FEATURES,
+        disabled: cat.vagasDisponiveis === 0,
+    };
+}
 
-    const modalidades: Modalidade[] = [
-        {
-            id: 1,
-            title: "CAMINHADA 4KM - CIDADÃO",
-            distance: "4KM",
-            priceFull: 90.00,
-            priceDiscount: 80.00,
-            type: "public",
-            lotText: "1º Lote",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
-        },
-        {
-            id: 2,
-            title: "CAMINHADA 4KM - POLICIAL",
-            distance: "4KM",
-            priceFull: 80.00,
-            priceDiscount: 80.00,
-            type: "police",
-            badge: "LOTE ÚNICO",
-            subtext: "esta categoria abrange todas as forças policiais",
-            lotText: "Valor Fixo",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
-        },
-        {
-            id: 3,
-            title: "CORRIDA 10KM - CIDADÃO",
-            distance: "10KM",
-            priceFull: 90.00,
-            priceDiscount: 80.00,
-            type: "public",
-            lotText: "1º Lote",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
-        },
-        {
-            id: 4,
-            title: "CORRIDA 10KM - POLICIAL",
-            distance: "10KM",
-            priceFull: 80.00,
-            priceDiscount: 80.00,
-            type: "police",
-            badge: "LOTE ÚNICO",
-            subtext: "esta categoria abrange todas as forças policiais",
-            lotText: "Valor Fixo",
-            features: ["Camiseta do Evento", "Medalha de participação", "Chip de cronometragem", "Hidratação no percurso", "Frutas e Isotônico na chegada"]
-        }
-    ];
+export const Registration = async () => {
+    const categorias = await fetchCategorias();
 
     return (
         <section id="registration" className="py-20 bg-white">
@@ -79,7 +41,6 @@ export const Registration = () => {
                 {/* Timeline de Lotes */}
                 <div className="max-w-4xl mx-auto mb-16">
                     <div className="flex flex-col md:flex-row justify-between items-center relative">
-                        {/* Linha de conexão (Desktop) */}
                         <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10"></div>
 
                         <div className="bg-white p-2 z-10 flex flex-col items-center">
@@ -109,20 +70,22 @@ export const Registration = () => {
 
                 {/* Grid Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {modalidades.map((item) => (
-                        <PricingCard
-                            key={item.id}
-                            title={item.title}
-                            priceFull={item.priceFull}
-                            priceDiscount={item.priceDiscount}
-                            type={item.type}
-                            badge={item.badge}
-                            lotText={item.lotText}
-                            subtext={item.subtext}
-                            features={item.features}
-                            onSelect={() => router.push("/inscricao")}
-                        />
-                    ))}
+                    {categorias.map((cat) => {
+                        const props = categoriaToPricingCardProps(cat);
+                        return (
+                            <PricingCard
+                                key={props.id}
+                                title={props.title}
+                                priceAtual={props.priceAtual}
+                                type={props.type}
+                                badge={props.badge}
+                                lotText={props.lotText}
+                                subtext={props.subtext}
+                                features={props.features}
+                                disabled={props.disabled}
+                            />
+                        );
+                    })}
                 </div>
             </div>
         </section>

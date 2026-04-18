@@ -1,5 +1,3 @@
-"use client";
-
 import { Header } from "@/components/organisms/Header";
 import { Hero } from "@/components/organisms/Hero";
 import { Countdown } from "@/components/organisms/Countdown";
