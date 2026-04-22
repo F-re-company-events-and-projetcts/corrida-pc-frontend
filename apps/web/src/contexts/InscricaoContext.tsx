@@ -9,7 +9,9 @@ interface InscricaoState {
   inscricoes: InscricaoInput[]
   setInscricoes: (inscritos: InscricaoInput[]) => void
   metodoPagamento: 'PIX' | 'CARTAO' | null
-  setMetodoPagamento: (m: 'PIX' | 'CARTAO') => void
+  setMetodoPagamento: (m: 'PIX' | 'CARTAO' | null) => void
+  pedidoId: string | null
+  setPedidoId: (id: string | null) => void
 }
 
 const InscricaoContext = createContext<InscricaoState | null>(null)
@@ -18,10 +20,16 @@ export function InscricaoProvider({ children }: { children: ReactNode }) {
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
   const [inscricoes, setInscricoes] = useState<InscricaoInput[]>([])
   const [metodoPagamento, setMetodoPagamento] = useState<'PIX' | 'CARTAO' | null>(null)
+  const [pedidoId, setPedidoId] = useState<string | null>(null)
 
   return (
     <InscricaoContext.Provider
-      value={{ categoriaId, setCategoriaId, inscricoes, setInscricoes, metodoPagamento, setMetodoPagamento }}
+      value={{
+        categoriaId, setCategoriaId,
+        inscricoes, setInscricoes,
+        metodoPagamento, setMetodoPagamento,
+        pedidoId, setPedidoId,
+      }}
     >
       {children}
     </InscricaoContext.Provider>

@@ -15,6 +15,14 @@ export async function GET(
       expiresAt: true,
       metodoPagamento: true,
       total: true,
+      updatedAt: true,
+      participantes: {
+        select: {
+          id: true,
+          nome: true,
+          categoria: { select: { nome: true } },
+        },
+      },
     },
   });
 
@@ -28,5 +36,11 @@ export async function GET(
     expiresAt: pedido.expiresAt?.toISOString() ?? null,
     metodoPagamento: pedido.metodoPagamento,
     total: pedido.total,
+    updatedAt: pedido.updatedAt.toISOString(),
+    participantes: pedido.participantes.map((p) => ({
+      id: p.id,
+      nome: p.nome,
+      categoria: p.categoria.nome,
+    })),
   });
 }

@@ -75,7 +75,7 @@ interface CardPaymentStepProps {
 
 export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
   const router = useRouter()
-  const { inscricoes } = useInscricao()
+  const { inscricoes, setPedidoId } = useInscricao()
 
   const cardFormRef = useRef<MPCardFormInstance | null>(null)
   // Stable refs so the cardForm onSubmit closure never goes stale
@@ -152,6 +152,7 @@ export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
           const success: SubmitState = { kind: 'success' }
           submitStateRef.current = success
           setSubmitState(success)
+          setPedidoId(pedidoId)
           router.push('/inscricao/confirmacao')
           return
         }

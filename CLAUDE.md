@@ -5,156 +5,215 @@
 Plataforma de inscrições para a 2ª Corrida do Policial Civil (27/Set/2026, Coxim-MS).
 Monorepo com frontend (landing page + fluxo de inscrição), backend (API + webhooks) e painel admin.
 
-**Documento de referência:** `docs/PRD-v2.md` — leia antes de qualquer tarefa de produto.
+**Documento de referência:** `PRD-v2-Corrida-Policial-Civil.md` na raiz.
+**Stories pendentes:** `prd.json` na raiz — execute sempre por ID (US-014, US-015...).
+
+---
+
+## Estado Atual — Fase 1 concluída (US-001 a US-013)
+
+| Story | Status | O que foi feito |
+|---|---|---|
+| US-001 | ✅ | Monorepo pnpm workspaces + Turborepo |
+| US-002 | ✅ | Correções frontend: 8KM→10KM, preços dinâmicos, routing /inscricao |
+| US-003 | ✅ | Schema Prisma completo, client singleton, seed (4 cats + 2 lotes), migration no Neon |
+| US-004 | ✅ | `InscricaoSchema`, `CriarPedidoSchema`, `validarCPF` com dígito verificador |
+| US-005 | ✅ | `GET /api/v1/categorias` — preço dinâmico, vagasDisponiveis, Cache-Control 30s |
+| US-006 | ✅ | Landing page consome API, PricingCard dinâmico, badge "Esgotado" |
+| US-007 | ✅ | `/inscricao` Step 1, `InscricaoContext`, `StepProgressBar` (5 steps via pathname) |
+| US-008 | ✅ | `/inscricao/dados` Step 2, react-hook-form + Zod, CPF em tempo real, dedup, máx 5 |
+| US-009 | ✅ | `/inscricao/revisao` Step 3, seletor PIX/Cartão, checkboxes regulamento + policial |
+| US-010 | ✅ | `POST /api/v1/inscricao` — rate limiting, vagas, PIX via MP, PedidoRascunho |
+| US-011 | ✅ | `/inscricao/pagamento` PIX — QR code base64, countdown colorido, polling 3s, cleanup |
+| US-012 | ✅ | Cartão — CardPaymentStep iframes, `POST /inscricao/[id]/cartao`, transação atômica |
+| US-013 | ✅ | Webhook MP — HMAC-SHA256 x-signature, idempotência, persiste participantes PIX |
+
+### Próximas stories (prd.json)
+- **US-014** — `/inscricao/confirmacao` (tela pós-pagamento, limpar contexto, pedidoId no context)
+- **US-015** — `/pedido/[id]` (status público sem login)
+- **US-016** — E-mail de confirmação (packages/email + Resend)
+- **US-017** — Worker expiração PIX (Vercel Cron a cada 15min)
+- **US-018 a US-023** — Painel admin + check-in + importação planilha
+
+### Banco de Dados
+- Neon PostgreSQL — connection string em `.env.local` (DATABASE_URL)
+- **packages/db/.env** deve ter DATABASE_URL (necessário para `prisma migrate`)
+- Migrations aplicadas: `20260416000000_init`, `20260421000000_add_pedido_rascunho`
+- Seed: rodar dentro de `packages/db/` com `npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts`
 
 ---
 
 ## Estrutura do Monorepo
 
 ```
-corrida-policial-civil/
+corrida-pc-frontend/
 ├── apps/
-│   ├── web/          ← Next.js 14 — landing page + fluxo de inscrição (/inscricao)
-│   ├── api/          ← Next.js 14 — API REST + webhooks Mercado Pago (Vercel Functions)
-│   └── admin/        ← Next.js 14 — painel admin + módulo de check-in
+│   ├── web/          ← Next.js 14 — landing page + fluxo /inscricao (porta 3000)
+│   ├── api/          ← Next.js 14 — REST API + webhooks MP (porta 3001)
+│   └── admin/        ← Next.js 14 — painel admin + check-in (porta 3002, não iniciado)
 ├── packages/
-│   ├── db/           ← Prisma schema + migrations + cliente compartilhado
-│   ├── types/        ← tipos TypeScript compartilhados (Participante, Pedido, Categoria…)
-│   ├── validations/  ← schemas Zod compartilhados entre apps
-│   └── email/        ← templates React Email (confirmação, lembrete PIX)
-├── docs/
-│   └── PRD-v2.md
-├── CLAUDE.md         ← este arquivo
-├── turbo.json
-├── pnpm-workspace.yaml
-└── package.json      ← root (devDependencies: turbo, typescript, eslint)
+│   ├── db/           ← Prisma schema + migrations + client singleton
+│   ├── types/        ← interfaces TypeScript compartilhadas
+│   ├── validations/  ← schemas Zod (InscricaoSchema, CriarPedidoSchema, validarCPF)
+│   └── email/        ← vazio — implementar na US-016 com React Email + Resend
+├── PRD-v2-Corrida-Policial-Civil.md
+├── prd.json          ← 23 user stories
+└── CLAUDE.md         ← este arquivo
+```
+
+---
+
+## Convenções de Import — CRÍTICO
+
+```typescript
+// ✅ Correto
+import { prisma } from "@corrida/db"
+import { Participante, StatusPedido } from "@corrida/db"   // tipos gerados pelo Prisma
+import type { Categoria } from "@corrida/types"             // interfaces manuais
+import { InscricaoSchema, validarCPF } from "@corrida/validations"
+
+// ❌ Nunca
+import { PrismaClient } from "@prisma/client"  // nunca instancie direto
+import { Categoria } from "../../types"         // nunca importe entre apps com path relativo
 ```
 
 ---
 
 ## Stack
 
-| Camada | Tecnologia | Justificativa |
-|---|---|---|
-| Frontend | Next.js 14 (App Router) | Já existe no repo; reaproveitamento máximo |
-| Backend | Next.js 14 API Routes | Deploy unificado na Vercel; sem servidor separado |
-| ORM | Prisma | Melhor DX com Next.js; type-safety nativo |
-| Banco | PostgreSQL via Neon | Serverless; integração nativa Vercel; tier gratuito |
-| Pagamentos | Mercado Pago SDK | Gateway definido pelo cliente |
-| E-mail | Resend + React Email | DX superior; integração simples com Next.js |
-| Estilo | Tailwind CSS + shadcn/ui | Já em uso no repo |
-| Validação | Zod | Compartilhado front/back via packages/validations |
-| Monorepo | pnpm workspaces + Turborepo | Cache de build; scripts coordenados |
-| Deploy | Vercel (todos os apps) | Monorepo nativo; sem config extra |
+| Camada | Tecnologia |
+|---|---|
+| Frontend | Next.js 14 App Router |
+| Backend | Next.js 14 API Routes |
+| ORM | Prisma v6 |
+| Banco | PostgreSQL via Neon |
+| Pagamentos | Mercado Pago SDK v2 (`mercadopago@^2`) |
+| E-mail | Resend + React Email (US-016) |
+| Estilo | Tailwind CSS v4 |
+| Validação | Zod v3 |
+| Forms | react-hook-form + @hookform/resolvers |
+| Monorepo | pnpm workspaces + Turborepo |
 
 ---
 
 ## Regras de Desenvolvimento
 
-### Sempre
+### SEMPRE
+- TypeScript estrito — `strict: true` em todos os tsconfigs
+- Usar tipos de `@corrida/types` — nunca redefinir localmente
+- Validar com Zod de `@corrida/validations` — nunca ad-hoc
+- Importar Prisma de `@corrida/db` — nunca instanciar `PrismaClient` dentro de um app
+- Rodar `pnpm --filter @corrida/[app] typecheck` ao finalizar cada story
+- Toda alteração de schema Prisma → migration correspondente
 
-- Escreva TypeScript estrito. `strict: true` no tsconfig de todos os apps.
-- Use os tipos de `packages/types` — nunca redefina `Participante`, `Pedido`, `Categoria` localmente.
-- Valide inputs com Zod de `packages/validations` — nunca valide ad-hoc.
-- Importe o cliente Prisma de `packages/db` — nunca instancie um novo `PrismaClient` dentro de um app.
-- Use os componentes de `apps/web/src/components/atoms/` e `molecules/` — não crie componentes duplicados.
-- Nomeie rotas de API como `/api/v1/[recurso]` em `apps/api`.
-- Toda alteração de schema Prisma deve ter uma migration correspondente (`prisma migrate dev`).
-
-### Nunca
-
-- Nunca armazene dados de cartão (CVV, número completo) em banco ou logs.
-- Nunca processe pagamento sem validar a assinatura do webhook (`x-signature` do Mercado Pago).
-- Nunca hardcode preços, categorias ou limites de vagas no frontend — sempre consuma da API.
-- Nunca faça `console.log` de CPF, e-mail ou dados de pagamento.
-- Nunca instancie `PrismaClient` fora de `packages/db/src/client.ts`.
-- Nunca commite `.env` — use `.env.example` com chaves vazias.
+### NUNCA
+- Nunca armazenar CPF em plain text — sempre `bcrypt.hash(cpf.replace(/\D/g, ''), 10)`
+- Nunca armazenar dados de cartão (número, CVV) em banco ou logs
+- Nunca processar webhook sem validar `x-signature` HMAC-SHA256 primeiro
+- Nunca hardcode preços ou vagas no frontend — sempre da API
+- Nunca commitar `.env` ou `.env.local`
 
 ---
 
-## Variáveis de Ambiente
+## Regras de Negócio Críticas
 
-Defina em `.env.local` (desenvolvimento) e no painel da Vercel (produção).
-Crie `.env.example` na raiz com todas as chaves listadas abaixo (valores vazios).
+### Preço
+```
+POLICIAL → R$ 80,00 FIXO em todos os lotes, sem exceção
+CIDADÃO  → precoCidadao do lote ativo (1º: R$80 | 2º: R$85 | 3º: R$90)
+           → null se nenhum lote ativo
+```
 
-```bash
-# Banco de dados
-DATABASE_URL=""                        # Neon PostgreSQL connection string
+### Vagas
+- 150 por categoria (600 total)
+- Verificar disponibilidade ANTES de criar pedido
+- Incrementar `vagasOcupadas` DENTRO da transação de confirmação
+- Considerar múltiplos inscritos na mesma categoria no mesmo pedido
 
-# Mercado Pago
-MP_ACCESS_TOKEN=""                     # Token da conta PJ do organizador
-MP_WEBHOOK_SECRET=""                   # Secret para validar assinatura do webhook
-MP_PUBLIC_KEY=""                       # Chave pública para o SDK no frontend
+### Fluxo PIX — dados só persistem após webhook
+```
+POST /inscricao → Pedido (AGUARDANDO_PAGAMENTO) + PedidoRascunho (JSON dos inscritos)
+Webhook confirmado → Participantes + Pagamento + Pedido(PAGO) → deleta PedidoRascunho
+```
 
-# E-mail
-RESEND_API_KEY=""                      # API key do Resend
-EMAIL_FROM=""                          # ex: inscricoes@corridadopolicialcivil.com.br
+### Fluxo Cartão — dados persistem na hora
+```
+POST /inscricao → Pedido (AGUARDANDO_PAGAMENTO), retorna { pedidoId, total }
+POST /inscricao/[id]/cartao → token MP → Participantes + Pagamento + Pedido(PAGO)
+```
 
-# App
-NEXT_PUBLIC_APP_URL=""                 # ex: https://corridadopolicialcivil.com.br
-NEXT_PUBLIC_MP_PUBLIC_KEY=""           # Mesma que MP_PUBLIC_KEY, exposta ao cliente
-ADMIN_SECRET=""                        # Seed do primeiro usuário admin
-
-# Vercel (preenchido automaticamente em produção)
-VERCEL_URL=""
+### Webhook — manifest exato para HMAC-SHA256
+```typescript
+// Ordem e ponto-e-vírgula finais são obrigatórios
+const ts = xSignature.split(',')[0].split('=')[1]
+const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
 ```
 
 ---
 
-## Modelo de Dados (Prisma — packages/db/prisma/schema.prisma)
+## Modelo de Dados
 
 ```prisma
 model Categoria {
-  id              String         @id @default(cuid())
-  nome            String         // "4KM Cidadão", "4KM Policial", "10KM Cidadão", "10KM Policial"
-  percursoKm      Int            // 4 ou 10
-  tipo            TipoCategoria  // CIDADAO | POLICIAL
-  vagasTotal      Int            @default(150)
-  vagasOcupadas   Int            @default(0)
-  participantes   Participante[]
-  createdAt       DateTime       @default(now())
+  id            String         @id @default(cuid())
+  nome          String
+  percursoKm    Int
+  tipo          TipoCategoria  // CIDADAO | POLICIAL
+  vagasTotal    Int            @default(150)
+  vagasOcupadas Int            @default(0)
+  participantes Participante[]
+  createdAt     DateTime       @default(now())
 }
 
 model Lote {
-  id            String   @id @default(cuid())
-  nome          String   // "1º Lote", "2º Lote"
-  precoCidadao  Float    // 80.00, 85.00, 90.00
-  // preço policial é sempre 80.00 — não depende do lote
-  ativo         Boolean  @default(false)
-  dataInicio    DateTime
-  dataFim       DateTime
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  nome         String
+  precoCidadao Float
+  ativo        Boolean  @default(false)
+  dataInicio   DateTime
+  dataFim      DateTime
+  createdAt    DateTime @default(now())
 }
 
 model Pedido {
-  id              String        @id @default(cuid())
+  id              String          @id @default(cuid())
   total           Float
-  status          StatusPedido  @default(AGUARDANDO_PAGAMENTO)
+  status          StatusPedido    @default(AGUARDANDO_PAGAMENTO)
   metodoPagamento MetodoPagamento
-  paymentId       String?       @unique  // ID do Mercado Pago — idempotência
-  expiresAt       DateTime?     // para PIX: now + 30min
+  paymentId       String?         @unique
+  expiresAt       DateTime?
   participantes   Participante[]
   pagamento       Pagamento?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  rascunho        PedidoRascunho?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model PedidoRascunho {
+  id             String   @id @default(cuid())
+  pedidoId       String   @unique
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  inscricoesJson String   // JSON.stringify(InscricaoInput[])
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 }
 
 model Participante {
-  id                  String     @id @default(cuid())
-  nome                String
-  cpf                 String     // armazenar com hash bcrypt — nunca em plain text
-  dataNascimento      DateTime
-  telefone            String
-  email               String
-  contatoEmergencia   String
-  tamanhoCamiseta     TamanhoCamiseta
-  categoriaId         String
-  categoria           Categoria  @relation(fields: [categoriaId], references: [id])
-  pedidoId            String
-  pedido              Pedido     @relation(fields: [pedidoId], references: [id])
-  numeroPeito         Int?       // preenchido após importação da planilha de cronometragem
-  checkinRealizadoEm  DateTime?
-  createdAt           DateTime   @default(now())
+  id                 String          @id @default(cuid())
+  nome               String
+  cpf                String          // bcrypt hash — NUNCA plain text
+  dataNascimento     DateTime
+  telefone           String
+  email              String
+  contatoEmergencia  String
+  tamanhoCamiseta    TamanhoCamiseta
+  categoriaId        String
+  categoria          Categoria       @relation(fields: [categoriaId], references: [id])
+  pedidoId           String
+  pedido             Pedido          @relation(fields: [pedidoId], references: [id])
+  numeroPeito        Int?
+  checkinRealizadoEm DateTime?
+  createdAt          DateTime        @default(now())
 
   @@index([cpf])
   @@index([email])
@@ -162,37 +221,37 @@ model Participante {
 }
 
 model Pagamento {
-  id                String   @id @default(cuid())
-  pedidoId          String   @unique
-  pedido            Pedido   @relation(fields: [pedidoId], references: [id])
-  paymentIdGateway  String   @unique  // Mercado Pago payment ID
+  id                String          @id @default(cuid())
+  pedidoId          String          @unique
+  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
+  paymentIdGateway  String          @unique
   valor             Float
   metodo            MetodoPagamento
   status            String
   webhookRecebidoEm DateTime?
-  createdAt         DateTime @default(now())
+  createdAt         DateTime        @default(now())
 }
 
 model AdminUser {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  senha     String   // bcrypt hash
+  id        String     @id @default(cuid())
+  email     String     @unique
+  senha     String     // bcrypt hash
   nome      String
-  role      AdminRole @default(OPERACIONAL)
+  role      AdminRole  @default(OPERACIONAL)
   logs      AdminLog[]
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 }
 
 model AdminLog {
-  id             String    @id @default(cuid())
-  adminId        String
-  admin          AdminUser @relation(fields: [adminId], references: [id])
-  acao           String
-  entidade       String
-  entidadeId     String
-  valorAnterior  String?
-  valorNovo      String?
-  createdAt      DateTime  @default(now())
+  id            String    @id @default(cuid())
+  adminId       String
+  admin         AdminUser @relation(fields: [adminId], references: [id])
+  acao          String
+  entidade      String
+  entidadeId    String
+  valorAnterior String?
+  valorNovo     String?
+  createdAt     DateTime  @default(now())
 }
 
 enum TipoCategoria   { CIDADAO POLICIAL }
@@ -204,304 +263,129 @@ enum AdminRole       { TOTAL OPERACIONAL }
 
 ---
 
-## Regras de Negócio Críticas
-
-### Preço
-```typescript
-// packages/types/src/pricing.ts
-export function calcularPreco(
-  tipoCategoria: 'CIDADAO' | 'POLICIAL',
-  precoCidadaoLoteAtivo: number
-): number {
-  if (tipoCategoria === 'POLICIAL') return 80.00  // sempre fixo
-  return precoCidadaoLoteAtivo                     // 80 | 85 | 90
-}
-```
-
-### Controle de vagas
-```typescript
-// Sempre verificar na API antes de persistir
-// packages/db/src/queries/categoria.ts
-export async function verificarVaga(categoriaId: string): Promise<boolean> {
-  const cat = await prisma.categoria.findUnique({ where: { id: categoriaId } })
-  if (!cat) throw new Error('Categoria não encontrada')
-  return cat.vagasOcupadas < cat.vagasTotal
-}
-
-// Usar transação ao confirmar pagamento para evitar race condition
-export async function confirmarVagas(categoriaIds: string[]) {
-  return prisma.$transaction(
-    categoriaIds.map(id =>
-      prisma.categoria.updateMany({
-        where: { id, vagasOcupadas: { lt: prisma.categoria.fields.vagasTotal } },
-        data: { vagasOcupadas: { increment: 1 } }
-      })
-    )
-  )
-}
-```
-
-### PIX — dados só persistem após pagamento confirmado
-```typescript
-// apps/api/src/app/api/v1/inscricao/route.ts
-// POST /api/v1/inscricao — NÃO persiste participantes ainda
-// Apenas cria o pedido com status AGUARDANDO_PAGAMENTO e retorna QR code
-
-// apps/api/src/app/api/v1/webhook/mercadopago/route.ts
-// Webhook: valida assinatura → verifica idempotência → persiste participantes → dispara e-mail
-```
-
-### Webhook — idempotência obrigatória
-```typescript
-// Verificar se payment_id já foi processado ANTES de qualquer escrita
-const jaProcessado = await prisma.pagamento.findUnique({
-  where: { paymentIdGateway: paymentId }
-})
-if (jaProcessado) return NextResponse.json({ ok: true }) // 200 silencioso
-```
-
----
-
-## Estrutura de Rotas
-
-### apps/web (porta 3000)
-```
-/                          ← landing page
-/inscricao                 ← fluxo multi-step de inscrição
-/inscricao/confirmacao     ← tela pós-pagamento
-/pedido/[id]               ← status do pedido (sem login)
-```
+## Rotas Implementadas
 
 ### apps/api (porta 3001)
 ```
-/api/v1/categorias         GET  — lista categorias com vagas disponíveis e lote ativo
-/api/v1/inscricao          POST — inicia inscrição, retorna QR code PIX ou token cartão
-/api/v1/inscricao/[id]     GET  — status do pedido
-/api/v1/webhook/mercadopago POST — webhook Mercado Pago (validar x-signature)
+GET  /api/v1/categorias                ← lista com preços e vagas
+POST /api/v1/inscricao                 ← cria pedido (PIX: + rascunho | Cartão: só pedido)
+GET  /api/v1/inscricao/[id]            ← status do pedido
+POST /api/v1/inscricao/[id]/cartao     ← processa token, persiste participantes
+POST /api/v1/webhook/mercadopago       ← confirma PIX, persiste participantes
 ```
 
-### apps/admin (porta 3002)
+### apps/web (porta 3000)
 ```
-/login                     ← autenticação admin
-/dashboard                 ← totalizadores
-/participantes             ← lista com filtros
-/participantes/[id]        ← detalhe + edição
-/camisetas                 ← estoque por tamanho
-/lotes                     ← gestão de lotes
-/checkin                   ← módulo de check-in presencial
-/checkin/importar          ← upload da planilha de cronometragem
+/                          ← landing page (server component)
+/inscricao                 ← Step 1: seleção de categoria
+/inscricao/dados           ← Step 2: formulário
+/inscricao/revisao         ← Step 3: revisão + pagamento
+/inscricao/pagamento       ← Step 4: PIX ou Cartão
+/inscricao/confirmacao     ← Step 5: confirmação (US-014 — pendente)
+/pedido/[id]               ← status público (US-015 — pendente)
 ```
 
 ---
 
-## Frontend — Componentes Existentes (apps/web)
+## InscricaoContext
 
-Estes componentes já existem e devem ser **reaproveitados** — não recrie:
-
-```
-src/components/atoms/
-  button.tsx        ← variantes: default, secondary, outline, ghost
-  input.tsx         ← wrapper do shadcn com estilo do projeto
-  card.tsx          ← card, CardHeader, CardTitle, CardContent
-  checkbox.tsx      ← wrapper do shadcn
-  typography.tsx    ← h1/h2/h3/p/label com variantes
-  badge.tsx         ← variantes: default, secondary, yellow, orange
-  logo.tsx          ← logo do evento
-  separator.tsx
-
-src/components/molecules/
-  pricing-card.tsx  ← card de modalidade com preço (adaptar para iniciar /inscricao)
-  course-card.tsx
-  info-card.tsx
-  countdown-timer.tsx
-
-src/components/organisms/
-  Header.tsx, Footer.tsx, Hero.tsx, Countdown.tsx
-  Routes.tsx        ← mapas Strava (manter)
-  Registration.tsx  ← adaptar: botão "Inscrever" navega para /inscricao
-  RaceInfo.tsx, HistoryGallery.tsx
-```
-
-**Correção necessária em landing-page-data.ts:**
-- Alterar distância da rota avançada de `"8KM"` para `"10KM"`
-- Remover preços hardcoded — substituir por chamada à API `/api/v1/categorias`
-
----
-
-## Fluxo de Inscrição — /inscricao
-
-Multi-step em `apps/web`. Cada step é um componente em `src/app/inscricao/steps/`.
-
-```
-Step 1: SelecionarCategoria   ← lista categorias da API; policial mostra aviso de autodeclaração
-Step 2: FormularioInscrito    ← dados do inscrito; botão "Adicionar outro" repete (max 5)
-Step 3: RevisarPedido         ← resumo editável; aceite de regulamento + termo policial
-Step 4: Pagamento             ← PIX (QR + polling) ou Cartão (SDK MP)
-Step 5: Confirmacao           ← resumo + número do pedido + instrução kit
-```
-
-Estado do fluxo gerenciado com Zustand ou React Context — não use URL params para dados sensíveis.
-
----
-
-## Integração Mercado Pago
-
-### Documentação de referência
-- SDK Node: https://github.com/mercadopago/sdk-nodejs
-- Checkout API (custom): https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing
-- Webhooks: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
-
-### PIX
 ```typescript
-import MercadoPago, { Payment } from 'mercadopago'
+// src/contexts/InscricaoContext.tsx — state atual
+interface InscricaoState {
+  categoriaId: string | null
+  setCategoriaId: (id: string | null) => void
+  inscricoes: InscricaoInput[]
+  setInscricoes: (inscritos: InscricaoInput[]) => void
+  metodoPagamento: 'PIX' | 'CARTAO' | null
+  setMetodoPagamento: (m: 'PIX' | 'CARTAO') => void
+  // US-014: adicionar pedidoId: string | null e setPedidoId
+}
+// Provider envolve src/app/inscricao/layout.tsx
+```
 
-const mp = new MercadoPago({ accessToken: process.env.MP_ACCESS_TOKEN! })
+---
 
-const payment = await new Payment(mp).create({
-  body: {
-    transaction_amount: total,
-    payment_method_id: 'pix',
-    payer: { email, first_name: nome },
-    date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    description: `Inscrição Corrida PC — Pedido ${pedidoId}`,
-    external_reference: pedidoId,
+## Variáveis de Ambiente
+
+```bash
+DATABASE_URL=""                      # Neon PostgreSQL
+MP_ACCESS_TOKEN="TEST-..."           # TEST- em dev, APP_USR- em produção
+MP_PUBLIC_KEY="TEST-..."             # não usar em server-side
+MP_WEBHOOK_SECRET=""                 # configurar ao registrar webhook no MP
+NEXT_PUBLIC_MP_PUBLIC_KEY="TEST-..."  # exposto ao browser
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+RESEND_API_KEY=""                    # US-016
+EMAIL_FROM=""                        # US-016
+ADMIN_SECRET=""                      # US-018
+```
+
+> ⚠️ `packages/db/.env` também deve ter `DATABASE_URL` para o Prisma CLI funcionar.
+> ⚠️ `NEXT_PUBLIC_MP_PUBLIC_KEY` ≠ `MP_ACCESS_TOKEN` — são chaves completamente diferentes.
+
+---
+
+## Padrões de Implementação
+
+### Server component buscando dados (padrão Next.js 14)
+```typescript
+export default async function Page() {
+  const categorias = await fetchCategorias()  // fetch no servidor
+  return <ClientComponent categorias={categorias} />  // passa para client
+}
+```
+
+### Estado discriminado para páginas com múltiplos estados
+```typescript
+type PageState =
+  | { kind: 'loading' }
+  | { kind: 'pix'; data: PedidoData }
+  | { kind: 'expired' }
+  | { kind: 'error'; message: string }
+```
+
+### Transação atômica com vagas (padrão usado em US-012 e US-013)
+```typescript
+await prisma.$transaction(async (tx) => {
+  // 1. criar participantes com CPF hasheado
+  for (const [idx, inscricao] of inscricoes.entries()) {
+    await tx.participante.create({ data: { ...inscricao, cpf: cpfHashes[idx] } })
   }
+  // 2. registrar pagamento
+  await tx.pagamento.create({ data: { pedidoId, paymentIdGateway, ... } })
+  // 3. atualizar status do pedido
+  await tx.pedido.update({ where: { id: pedidoId }, data: { status: 'PAGO' } })
+  // 4. incrementar vagas por categoria
+  for (const [categoriaId, count] of Object.entries(countPerCategory)) {
+    await tx.categoria.update({ where: { id: categoriaId }, data: { vagasOcupadas: { increment: count } } })
+  }
+  // 5. limpar rascunho (apenas PIX)
+  await tx.pedidoRascunho.delete({ where: { pedidoId } })
 })
-// Retornar: payment.point_of_interaction.transaction_data.qr_code
-//           payment.point_of_interaction.transaction_data.qr_code_base64
-```
-
-### Validação de webhook
-```typescript
-import crypto from 'crypto'
-
-export function validarWebhookMP(
-  xSignature: string,
-  xRequestId: string,
-  dataId: string
-): boolean {
-  const secret = process.env.MP_WEBHOOK_SECRET!
-  const manifest = `id:${dataId};request-id:${xRequestId};ts:${xSignature.split(',')[0].split('=')[1]};`
-  const hash = crypto.createHmac('sha256', secret).update(manifest).digest('hex')
-  const received = xSignature.split(',')[1]?.split('=')[1]
-  return hash === received
-}
 ```
 
 ---
 
-## E-mail — packages/email
+## Scripts
 
-Use React Email + Resend.
-
-```typescript
-// packages/email/src/templates/ConfirmacaoInscricao.tsx
-// packages/email/src/templates/LembretePix.tsx
-// packages/email/src/send.ts — wrapper do Resend
-
-import { Resend } from 'resend'
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-export async function enviarConfirmacao(pedido: PedidoComParticipantes) {
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
-    to: pedido.participantes.map(p => p.email),
-    subject: `Inscrição confirmada — Corrida do Policial Civil`,
-    react: <ConfirmacaoInscricao pedido={pedido} />,
-  })
-}
+```bash
+pnpm dev                    # todos os apps em paralelo via Turborepo
+pnpm typecheck              # todos os apps
+pnpm --filter @corrida/web typecheck   # só o web
+pnpm --filter @corrida/api typecheck   # só a api
+pnpm db:migrate             # nova migration (pede nome interativamente)
+pnpm db:generate            # regenerar Prisma client
+pnpm db:studio              # Prisma Studio na porta 5555
 ```
-
----
-
-## Scripts (raiz do monorepo)
-
-```json
-{
-  "scripts": {
-    "dev":          "turbo dev",
-    "build":        "turbo build",
-    "lint":         "turbo lint",
-    "typecheck":    "turbo typecheck",
-    "db:migrate":   "cd packages/db && pnpm prisma migrate dev",
-    "db:generate":  "cd packages/db && pnpm prisma generate",
-    "db:studio":    "cd packages/db && pnpm prisma studio",
-    "db:seed":      "cd packages/db && pnpm prisma db seed"
-  }
-}
-```
-
----
-
-## Turbo Pipeline (turbo.json)
-
-```json
-{
-  "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "build":      { "dependsOn": ["^build"], "outputs": [".next/**"] },
-    "dev":        { "cache": false, "persistent": true },
-    "lint":       {},
-    "typecheck":  { "dependsOn": ["^build"] }
-  }
-}
-```
-
----
-
-## Deploy na Vercel
-
-Cada app em `apps/` é um projeto separado na Vercel apontando para o mesmo repositório.
-
-| Projeto Vercel | Root Directory | Build Command |
-|---|---|---|
-| `corrida-web` | `apps/web` | `cd ../.. && pnpm build --filter=web` |
-| `corrida-api` | `apps/api` | `cd ../.. && pnpm build --filter=api` |
-| `corrida-admin` | `apps/admin` | `cd ../.. && pnpm build --filter=admin` |
-
-Variável de ambiente `DATABASE_URL` (Neon) configurada nos três projetos.
 
 ---
 
 ## Checklist de Segurança (revisar antes de cada PR)
 
+- [ ] CPF armazenado como bcrypt hash — nunca plain text
 - [ ] Nenhum dado de cartão em logs ou banco
-- [ ] Webhook validado com `validarWebhookMP()` antes de processar
-- [ ] CPF armazenado como hash — nunca em plain text
-- [ ] Rate limiting ativo no endpoint `/api/v1/inscricao` (10 req/min por IP)
-- [ ] `.env` não commitado — apenas `.env.example`
-- [ ] Idempotência: `paymentId` único verificado antes de persistir
-
----
-
-## Referências Rápidas
-
-- PRD completo: `docs/PRD-v2.md`
-- Schema Prisma: `packages/db/prisma/schema.prisma`
-- Tipos compartilhados: `packages/types/src/index.ts`
-- Componentes atom: `apps/web/src/components/atoms/`
-- Regras de preço: `packages/types/src/pricing.ts`
----
-
-## Estado Atual do Projeto (atualizar a cada fase)
-
-### Concluído
-- US-001: monorepo pnpm workspaces + Turborepo
-- US-002: correções frontend (preços, distâncias, routing /inscricao)
-- US-003: schema Prisma completo, client singleton, seed, migration aplicada no Neon
-
-### Banco de Dados
-- Neon PostgreSQL — connection string em `.env.local` (DATABASE_URL)
-- Migration aplicada: `20260416000000_init`
-- Seed: `pnpm db:seed` cria 4 categorias + 2 lotes
-
-### Convenções de Import
-- Prisma client: `import { prisma } from "@corrida/db"`
-- Tipos Prisma: `import { Participante, StatusPedido } from "@corrida/db"`
-- Tipos locais: `import { ... } from "@corrida/types"`
-- Validações Zod: `import { ... } from "@corrida/validations"`
-
-### Porta dos apps em dev
-- web: 3000
-- api: 3001  
-- admin: 3002
+- [ ] Webhook valida `x-signature` antes de processar
+- [ ] Rate limiting ativo em `/api/v1/inscricao` (10 req/min/IP)
+- [ ] Idempotência: verificar `paymentIdGateway` antes de persistir
+- [ ] `.env` e `.env.local` não commitados
+- [ ] `NEXT_PUBLIC_MP_PUBLIC_KEY` ≠ `MP_ACCESS_TOKEN`

@@ -55,7 +55,7 @@ function useCountdown(expiresAt: string | null) {
 
 export default function PagamentoPage() {
   const router = useRouter()
-  const { inscricoes, metodoPagamento } = useInscricao()
+  const { inscricoes, metodoPagamento, setPedidoId } = useInscricao()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [copied, setCopied] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -77,6 +77,7 @@ export default function PagamentoPage() {
         const data = await res.json() as { status: string }
         if (data.status === 'PAGO') {
           stopPolling()
+          setPedidoId(pedidoId)
           router.push('/inscricao/confirmacao')
         } else if (data.status === 'EXPIRADO' || data.status === 'CANCELADO') {
           stopPolling()
@@ -121,6 +122,7 @@ export default function PagamentoPage() {
           setState({ kind: 'card', data: data as CartaoData })
         } else {
           const pixData = data as PixData
+          setPedidoId(pixData.pedidoId)
           setState({ kind: 'pix', data: pixData })
           startPolling(pixData.pedidoId)
         }
