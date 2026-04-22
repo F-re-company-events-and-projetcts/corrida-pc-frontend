@@ -14,7 +14,9 @@
     "@prisma/client": "^6"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",
+    "bcryptjs": "^3.0.3",
     "prisma": "^6",
     "ts-node": "^10.9.2",
     "typescript": "^5"

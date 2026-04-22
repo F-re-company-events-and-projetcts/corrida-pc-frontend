@@ -32,8 +32,9 @@ Monorepo com frontend (landing page + fluxo de inscrição), backend (API + webh
 - **US-014** — `/inscricao/confirmacao` (tela pós-pagamento, limpar contexto, pedidoId no context)
 - **US-015** — `/pedido/[id]` (status público sem login)
 - **US-016** — E-mail de confirmação (packages/email + Resend)
-- **US-017** — Worker expiração PIX (Vercel Cron a cada 15min)
-- **US-018 a US-023** — Painel admin + check-in + importação planilha
+- **US-017** ✅ — Worker expiração PIX (Vercel Cron a cada 15min) — endpoint + vercel.json
+- **US-018** ✅ — Autenticação admin: `POST /api/v1/admin/auth`, middleware JWT (jose), login page, cookie httpOnly, seed-admin.ts
+- **US-019 a US-023** — Painel admin + check-in + importação planilha
 
 ### Banco de Dados
 - Neon PostgreSQL — connection string em `.env.local` (DATABASE_URL)
@@ -272,7 +273,18 @@ POST /api/v1/inscricao                 ← cria pedido (PIX: + rascunho | Cartã
 GET  /api/v1/inscricao/[id]            ← status do pedido
 POST /api/v1/inscricao/[id]/cartao     ← processa token, persiste participantes
 POST /api/v1/webhook/mercadopago       ← confirma PIX, persiste participantes
+POST /api/v1/admin/auth                ← login admin → JWT (rate limit: 5/15min/IP)
 ```
+
+### apps/admin (porta 3002)
+```
+/login                     ← formulário email+senha (react-hook-form + Zod)
+/dashboard                 ← protegido por middleware JWT
+/logout                    ← limpa cookie admin_token e redireciona para /login
+/api/auth/session          ← POST interno: recebe token, define cookie httpOnly
+```
+middleware.ts protege todas as rotas exceto /login e /api/auth/session.
+Cookie: admin_token (httpOnly, sameSite: strict, maxAge: 8h).
 
 ### apps/web (porta 3000)
 ```
@@ -317,7 +329,8 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_API_URL="http://localhost:3001"
 RESEND_API_KEY=""                    # US-016
 EMAIL_FROM=""                        # US-016
-ADMIN_SECRET=""                      # US-018
+CRON_SECRET=""                       # US-017 — protege /api/v1/cron/expirar-pix
+ADMIN_JWT_SECRET=""                  # US-018 — assina e verifica JWT do painel admin (HS256, 8h)
 ```
 
 > ⚠️ `packages/db/.env` também deve ter `DATABASE_URL` para o Prisma CLI funcionar.

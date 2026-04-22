@@ -5,6 +5,7 @@ import MercadoPago, { Payment } from "mercadopago";
 import { z } from "zod";
 import { prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
+import { sendConfirmacaoEmail } from "@corrida/email";
 
 const mp = new MercadoPago({ accessToken: process.env.MP_ACCESS_TOKEN! });
 
@@ -186,6 +187,32 @@ export async function POST(req: NextRequest) {
   console.log(
     `[webhook] PIX confirmed: pedidoId=${pedidoId}, paymentId=${paymentIdGateway}`
   );
+
+  // Fire-and-forget: fetch participantes and send confirmation email
+  void (async () => {
+    try {
+      const participantes = await prisma.participante.findMany({
+        where: { pedidoId },
+        include: { categoria: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const destinatario = participantes[0]?.email;
+      if (destinatario) {
+        await sendConfirmacaoEmail({
+          pedidoId,
+          email: destinatario,
+          total: pedido.total,
+          participantes: participantes.map((p) => ({
+            nome: p.nome,
+            categoria: p.categoria.nome,
+            percursoKm: p.categoria.percursoKm,
+          })),
+        });
+      }
+    } catch (err) {
+      console.error("[webhook] Failed to send confirmation email:", err);
+    }
+  })();
 
   return NextResponse.json({ ok: true });
 }

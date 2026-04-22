@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { CheckCircle, Loader2, AlertCircle, MapPin, Calendar } from 'lucide-react'
 import { useInscricao } from '@/contexts/InscricaoContext'
 import { Button } from '@/components/atoms/button'
@@ -165,6 +166,12 @@ export default function ConfirmacaoPage() {
           </Typography>
         </div>
       </div>
+
+      <Link href={`/pedido/${data.id}`} className="block">
+        <Button variant="outline" className="w-full">
+          Ver status do pedido
+        </Button>
+      </Link>
 
       <Button className="w-full" onClick={() => router.push('/')}>
         Voltar ao início
