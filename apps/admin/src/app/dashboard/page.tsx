@@ -85,6 +85,12 @@ export default async function DashboardPage() {
               Participantes
             </a>
             <a
+              href="/checkin"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Check-in
+            </a>
+            <a
               href="/logout"
               className="text-gray-500 hover:text-red-600 transition-colors"
             >
