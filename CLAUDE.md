@@ -32,7 +32,7 @@ Monorepo com frontend (landing page + fluxo de inscrição), backend (API + webh
 - **US-014** — `/inscricao/confirmacao` (tela pós-pagamento, limpar contexto, pedidoId no context)
 - **US-015** — `/pedido/[id]` (status público sem login)
 - **US-016** — E-mail de confirmação (packages/email + Resend)
-- **US-017** — Worker expiração PIX (Vercel Cron a cada 15min)
+- **US-017** ✅ — Worker expiração PIX (Vercel Cron a cada 15min) — endpoint + vercel.json
 - **US-018 a US-023** — Painel admin + check-in + importação planilha
 
 ### Banco de Dados
@@ -317,6 +317,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_API_URL="http://localhost:3001"
 RESEND_API_KEY=""                    # US-016
 EMAIL_FROM=""                        # US-016
+CRON_SECRET=""                       # US-017 — protege /api/v1/cron/expirar-pix
 ADMIN_SECRET=""                      # US-018
 ```
 
