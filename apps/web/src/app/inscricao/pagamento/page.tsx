@@ -6,19 +6,26 @@ import { Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { useInscricao } from '@/contexts/InscricaoContext'
 import { Button } from '@/components/atoms/button'
 import { Typography } from '@/components/atoms/typography'
+import { CardPaymentStep } from './CardPaymentStep'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
-interface PedidoData {
+interface PixData {
   pedidoId: string
   qrCode: string
   qrCodeBase64: string
   expiresAt: string
 }
 
+interface CartaoData {
+  pedidoId: string
+  total: number
+}
+
 type PageState =
   | { kind: 'loading' }
-  | { kind: 'pix'; data: PedidoData }
+  | { kind: 'pix'; data: PixData }
+  | { kind: 'card'; data: CartaoData }
   | { kind: 'expired' }
   | { kind: 'error'; message: string }
 
@@ -52,7 +59,6 @@ export default function PagamentoPage() {
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [copied, setCopied] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pedidoIdRef = useRef<string | null>(null)
   const expiredRef = useRef(false)
 
   const stopPolling = useCallback(() => {
@@ -107,12 +113,17 @@ export default function PagamentoPage() {
           return
         }
 
-        const data = await res.json() as PedidoData
+        const data = await res.json() as PixData | CartaoData
+
         if (cancelled) return
 
-        pedidoIdRef.current = data.pedidoId
-        setState({ kind: 'pix', data })
-        startPolling(data.pedidoId)
+        if (metodoPagamento === 'CARTAO') {
+          setState({ kind: 'card', data: data as CartaoData })
+        } else {
+          const pixData = data as PixData
+          setState({ kind: 'pix', data: pixData })
+          startPolling(pixData.pedidoId)
+        }
       } catch {
         if (!cancelled) {
           setState({ kind: 'error', message: 'Erro de conexão. Tente novamente.' })
@@ -151,16 +162,22 @@ export default function PagamentoPage() {
     }
   }
 
+  // ─── Loading ─────────────────────────────────────────────────────────────────
+
   if (state.kind === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-secondary" />
         <Typography variant="p" className="text-gray-500">
-          Gerando QR Code PIX…
+          {metodoPagamento === 'CARTAO'
+            ? 'Preparando pagamento…'
+            : 'Gerando QR Code PIX…'}
         </Typography>
       </div>
     )
   }
+
+  // ─── Error ───────────────────────────────────────────────────────────────────
 
   if (state.kind === 'error') {
     return (
@@ -179,6 +196,8 @@ export default function PagamentoPage() {
     )
   }
 
+  // ─── PIX expired ─────────────────────────────────────────────────────────────
+
   if (state.kind === 'expired') {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
@@ -195,6 +214,19 @@ export default function PagamentoPage() {
       </div>
     )
   }
+
+  // ─── Card payment ─────────────────────────────────────────────────────────────
+
+  if (state.kind === 'card') {
+    return (
+      <CardPaymentStep
+        pedidoId={state.data.pedidoId}
+        total={state.data.total}
+      />
+    )
+  }
+
+  // ─── PIX ─────────────────────────────────────────────────────────────────────
 
   const { qrCodeBase64, qrCode } = state.data
 

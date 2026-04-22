@@ -123,9 +123,13 @@ export async function POST(req: NextRequest) {
     return acc + (cat.tipo === "POLICIAL" ? 80.0 : loteAtivo.precoCidadao);
   }, 0);
 
-  const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+  // PIX expires in 30min; card payments don't need expiration
+  const expiresAt =
+    metodoPagamento === "PIX"
+      ? new Date(now.getTime() + 30 * 60 * 1000)
+      : null;
 
-  // Persist the order (participants are created only after payment confirmation in the webhook)
+  // Persist the order (participants are created only after payment confirmation)
   const pedido = await prisma.pedido.create({
     data: {
       total,
@@ -134,6 +138,11 @@ export async function POST(req: NextRequest) {
       expiresAt,
     },
   });
+
+  // For card payments: no PIX generation — frontend calls /inscricao/[id]/cartao next
+  if (metodoPagamento === "CARTAO") {
+    return NextResponse.json({ pedidoId: pedido.id, total }, { status: 201 });
+  }
 
   // Generate PIX via Mercado Pago
   const primeiroInscrito = inscricoes[0];
@@ -150,7 +159,7 @@ export async function POST(req: NextRequest) {
           email: primeiroInscrito.email,
           first_name: primeiroInscrito.nome.split(" ")[0],
         },
-        date_of_expiration: expiresAt.toISOString(),
+        date_of_expiration: expiresAt!.toISOString(),
         description: `Inscrição Corrida PC — Pedido ${pedido.id}`,
         external_reference: pedido.id,
       },
@@ -183,7 +192,7 @@ export async function POST(req: NextRequest) {
       pedidoId: pedido.id,
       qrCode,
       qrCodeBase64,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt: expiresAt!.toISOString(),
     },
     { status: 201 }
   );
