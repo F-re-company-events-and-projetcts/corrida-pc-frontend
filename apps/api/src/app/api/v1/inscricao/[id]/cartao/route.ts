@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import MercadoPago, { Payment } from "mercadopago";
 import { prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
+import { sendConfirmacaoEmail } from "@corrida/email";
 
 const CardPaymentSchema = z.object({
   token: z.string().min(1),
@@ -163,6 +164,32 @@ export async function POST(
       });
     }
   });
+
+  // Fire-and-forget: fetch participantes and send confirmation email
+  void (async () => {
+    try {
+      const participantes = await prisma.participante.findMany({
+        where: { pedidoId: id },
+        include: { categoria: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const destinatario = participantes[0]?.email;
+      if (destinatario) {
+        await sendConfirmacaoEmail({
+          pedidoId: id,
+          email: destinatario,
+          total: pedido.total,
+          participantes: participantes.map((p) => ({
+            nome: p.nome,
+            categoria: p.categoria.nome,
+            percursoKm: p.categoria.percursoKm,
+          })),
+        });
+      }
+    } catch (err) {
+      console.error("[cartao] Failed to send confirmation email:", err);
+    }
+  })();
 
   return NextResponse.json({ ok: true, pedidoId: id });
 }
