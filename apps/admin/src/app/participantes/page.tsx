@@ -171,6 +171,12 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
               Check-in
             </a>
             <a
+              href="/importar"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Importar números
+            </a>
+            <a
               href="/logout"
               className="text-gray-500 hover:text-red-600 transition-colors"
             >
