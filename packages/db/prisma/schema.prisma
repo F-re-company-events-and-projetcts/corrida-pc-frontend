@@ -73,8 +73,18 @@ model Pedido {
   expiresAt       DateTime?
   participantes   Participante[]
   pagamento       Pagamento?
+  rascunho        PedidoRascunho?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+}
+
+model PedidoRascunho {
+  id             String   @id @default(cuid())
+  pedidoId       String   @unique
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  inscricoesJson String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 }
 
 model Participante {

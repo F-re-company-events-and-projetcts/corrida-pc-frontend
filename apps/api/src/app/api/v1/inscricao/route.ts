@@ -182,10 +182,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await prisma.pedido.update({
-    where: { id: pedido.id },
-    data: { paymentId },
-  });
+  await prisma.$transaction([
+    prisma.pedido.update({
+      where: { id: pedido.id },
+      data: { paymentId },
+    }),
+    prisma.pedidoRascunho.create({
+      data: {
+        pedidoId: pedido.id,
+        inscricoesJson: JSON.stringify(inscricoes),
+        expiresAt: expiresAt!,
+      },
+    }),
+  ]);
 
   return NextResponse.json(
     {
