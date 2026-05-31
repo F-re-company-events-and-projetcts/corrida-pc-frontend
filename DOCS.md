@@ -2,7 +2,7 @@
 
 > **Para quem é este documento:** desenvolvedor que vai manter, expandir ou debugar este projeto.
 > Leia do início ao fim antes de mexer em qualquer código.
-> Última atualização: Fase 1 (US-001 a US-013) — fluxo de inscrição e pagamento completos.
+> Última atualização: Fase 3 (US-001 a US-023) — sistema completo (inscrição, pagamento, e-mail, cron, painel admin).
 
 ---
 
@@ -15,8 +15,9 @@ Sistema de inscrições online para a 2ª Corrida do Policial Civil de Coxim-MS 
 - Conduz o usuário por um fluxo de 5 passos: categoria → dados → revisão → pagamento → confirmação
 - Aceita até 5 inscritos por transação
 - Processa PIX e Cartão de Crédito via Mercado Pago
-- Envia confirmação por e-mail após pagamento (pendente — US-016)
-- Oferece painel administrativo para os organizadores (pendente — US-018 a US-023)
+- Envia confirmação por e-mail após pagamento (React Email + Resend, fire-and-forget)
+- Expira pedidos PIX não pagos automaticamente (Vercel Cron a cada 15min)
+- Oferece painel administrativo completo para os organizadores
 
 **O que o sistema não faz:**
 - Não tem login para o inscrito — o pedido é identificado pelo ID e e-mail
@@ -28,24 +29,30 @@ Sistema de inscrições online para a 2ª Corrida do Policial Civil de Coxim-MS 
 ## Arquitetura
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Browser                                                 │
-│  ┌──────────────┐      ┌──────────────┐                 │
-│  │  apps/web    │      │  apps/admin  │                 │
-│  │  (Next.js)   │      │  (Next.js)   │                 │
-│  │  porta 3000  │      │  porta 3002  │                 │
-│  └──────┬───────┘      └──────┬───────┘                 │
-└─────────┼────────────────────┼─────────────────────────┘
-          │ fetch              │ fetch
-          ▼                    ▼
-┌─────────────────────────────────────────────────────────┐
-│  apps/api  (Next.js API Routes — porta 3001)             │
-│  /api/v1/categorias                                      │
-│  /api/v1/inscricao                                       │
-│  /api/v1/inscricao/[id]                                  │
-│  /api/v1/inscricao/[id]/cartao                           │
-│  /api/v1/webhook/mercadopago   ◄─── Mercado Pago         │
-└──────────────────────────┬──────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Browser                                                          │
+│  ┌──────────────┐      ┌────────────────────────────────────┐    │
+│  │  apps/web    │      │  apps/admin                        │    │
+│  │  (Next.js)   │      │  (Next.js)                         │    │
+│  │  porta 3000  │      │  porta 3002                        │    │
+│  └──────┬───────┘      │  /api/proxy/[...path] ◄── proxy    │    │
+│         │              └──────────────┬─────────────────────┘    │
+└─────────┼────────────────────────────┼──────────────────────────┘
+          │ fetch                      │ fetch (com Bearer token)
+          ▼                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  apps/api  (Next.js API Routes — porta 3001)                     │
+│  /api/v1/categorias                                              │
+│  /api/v1/inscricao                                               │
+│  /api/v1/inscricao/[id]                                          │
+│  /api/v1/inscricao/[id]/cartao                                   │
+│  /api/v1/webhook/mercadopago   ◄─── Mercado Pago                 │
+│  /api/v1/admin/auth            ◄─── login admin                  │
+│  /api/v1/admin/participantes   ◄─── listagem, filtros            │
+│  /api/v1/admin/checkin/[id]    ◄─── registrar check-in           │
+│  /api/v1/admin/importar        ◄─── vincula números de peito     │
+│  /api/v1/cron/expirar-pix      ◄─── Vercel Cron (CRON_SECRET)    │
+└──────────────────────────┬──────────────────────────────────────┘
                            │ Prisma
                            ▼
                   ┌─────────────────┐
@@ -55,6 +62,124 @@ Sistema de inscrições online para a 2ª Corrida do Policial Civil de Coxim-MS 
 ```
 
 Os três apps são projetos Next.js separados dentro de um monorepo pnpm + Turborepo. Em produção cada um é um projeto independente na Vercel, mas compartilham o mesmo banco PostgreSQL.
+
+### Padrão de Proxy httpOnly (admin → api)
+
+O painel admin usa um cookie `admin_token` httpOnly — inacessível ao JavaScript do browser. Isso significa que o browser não pode incluir o token diretamente em chamadas `fetch()` para `apps/api`. A solução é o proxy interno em `apps/admin/src/app/api/proxy/[...path]/route.ts`:
+
+```
+Browser → POST /api/proxy/admin/checkin/[id]
+          ↓  (server-side do admin lê o cookie)
+          → POST apps/api/api/v1/admin/checkin/[id]  (com Authorization: Bearer token)
+```
+
+O proxy roda no edge/server do admin, lê o cookie httpOnly e faz a chamada autenticada para `apps/api`. O browser nunca vê o JWT.
+
+---
+
+## Setup
+
+### Requisitos
+
+- Node.js 20+
+- pnpm 9+
+- Acesso ao banco Neon (connection string)
+- Credenciais de teste do Mercado Pago
+
+### 1. Instalar dependências
+
+```bash
+pnpm install
+```
+
+### 2. Criar arquivos `.env.local` em cada app
+
+Cada app precisa do seu próprio `.env.local`. Os arquivos não são compartilhados automaticamente.
+
+**`apps/api/.env.local`**
+```bash
+DATABASE_URL="postgresql://..."
+MP_ACCESS_TOKEN="TEST-..."
+MP_WEBHOOK_SECRET="..."
+RESEND_API_KEY="..."
+EMAIL_FROM="noreply@seudominio.com.br"
+CRON_SECRET="..."
+ADMIN_JWT_SECRET="..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+**`apps/web/.env.local`**
+```bash
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_MP_PUBLIC_KEY="TEST-..."
+```
+
+**`apps/admin/.env.local`**
+```bash
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+ADMIN_JWT_SECRET="..."
+```
+
+> ⚠️ `packages/db/.env` também precisa de `DATABASE_URL` para o Prisma CLI funcionar (migrations, seed, studio).
+> ```bash
+> # Forma rápida de criar:
+> grep DATABASE_URL apps/api/.env.local > packages/db/.env
+> ```
+
+### 3. Rodar em desenvolvimento
+
+```bash
+pnpm dev   # inicia web (3000), api (3001) e admin (3002) em paralelo via Turborepo
+```
+
+---
+
+## Banco de Dados
+
+### Migrations
+
+Toda mudança de schema deve ter uma migration correspondente. Nunca edite o schema sem criar uma migration — o Prisma detecta divergências e se recusa a rodar em produção.
+
+```bash
+# Para criar uma nova migration:
+cd packages/db
+DATABASE_URL="..." npx prisma migrate dev --name nome_descritivo
+
+# Ou com o arquivo .env configurado:
+pnpm db:migrate
+```
+
+### Migrations aplicadas
+
+| Migration | O que faz |
+|---|---|
+| `20260416000000_init` | Cria todas as tabelas e enums |
+| `20260421000000_add_pedido_rascunho` | Adiciona tabela `PedidoRascunho` com FK em cascata |
+
+### Seed — categorias e lotes
+
+O seed cria as 4 categorias e 2 lotes iniciais. Rodar em caso de reset do banco:
+
+```bash
+cd packages/db
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+```
+
+### Seed — usuário admin
+
+O seed de admin cria o primeiro usuário com acesso ao painel:
+
+```bash
+cd apps/api
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-admin.ts
+```
+
+Credenciais padrão criadas pelo seed:
+- **E-mail:** `admin@corridapc.com.br`
+- **Senha:** `admin123`
+
+> ⚠️ Trocar a senha imediatamente após o primeiro login em produção.
 
 ---
 
@@ -98,6 +223,7 @@ Step 5: Confirmação com número do pedido e instrução de retirada de kit
    │   ├── Atualiza Pedido para PAGO
    │   ├── Incrementa vagasOcupadas por categoria
    │   └── Deleta PedidoRascunho
+   ├── Dispara e-mail de confirmação (fire-and-forget via Resend)
    └── Retorna 200
 
 4. Polling detecta status PAGO → navega para /inscricao/confirmacao
@@ -118,8 +244,47 @@ Step 5: Confirmação com número do pedido e instrução de retirada de kit
    ├── Valida pedido (existe, é CARTAO, está AGUARDANDO_PAGAMENTO)
    ├── Envia token ao Mercado Pago
    ├── Se aprovado → transação atômica (participantes + pagamento + vagas)
+   │   └── Dispara e-mail de confirmação (fire-and-forget)
    └── Se recusado → retorna 402 com mensagem traduzida
 ```
+
+---
+
+## Painel Admin
+
+O painel em `apps/admin` (porta 3002) está completamente implementado. Acesso protegido por JWT (cookie httpOnly `admin_token`, validade 8h).
+
+### Módulos
+
+| Rota | Funcionalidade |
+|---|---|
+| `/login` | Formulário email+senha, JWT via `POST /api/v1/admin/auth`, define cookie httpOnly via `/api/auth/session` |
+| `/dashboard` | Server component: totalizadores (total inscritos, receita, vagas por categoria, distribuição de camisetas) |
+| `/participantes` | Tabela paginada (20/pág), filtros por categoria/status/camiseta, busca por nome e e-mail, CPF mascarado |
+| `/checkin` | Busca participante por nome ou e-mail, exibe dados, registra `checkinRealizadoEm` via proxy |
+| `/checkin/[numeroPeito]` | Check-in direto pelo número de peito (fluxo alternativo para evento) |
+| `/checkin/importar` | Upload de planilha CSV ou XLSX, preview dos primeiros 10 registros, vincula números de peito aos participantes por ordem de `createdAt` dentro de cada categoria |
+| `/logout` | Limpa cookie `admin_token` e redireciona para `/login` |
+
+### Rotas internas do admin
+
+```
+POST /api/auth/session         ← recebe token do login, define cookie httpOnly
+GET|POST /api/proxy/[...path]  ← proxy para apps/api com token do cookie
+```
+
+### Autenticação e middleware
+
+`middleware.ts` protege todas as rotas exceto `/login` e `/api/auth/session`. Verifica o cookie `admin_token` com `jose` (HS256). Em caso de token inválido ou ausente, redireciona para `/login`.
+
+Cookie: `admin_token` — httpOnly, sameSite: strict, maxAge: 8h.
+
+### Roles de admin
+
+| Role | Acesso |
+|---|---|
+| `TOTAL` | Todas as operações, incluindo importação e alteração de status |
+| `OPERACIONAL` | Check-in e consulta de participantes |
 
 ---
 
@@ -127,7 +292,7 @@ Step 5: Confirmação com número do pedido e instrução de retirada de kit
 
 ### Por que o CPF é armazenado como hash?
 
-CPF é dado pessoal sensível. Em caso de vazamento do banco, hashes bcrypt não são reversíveis. A desvantagem é que não dá para buscar pelo CPF exato — no check-in presencial, o admin consulta pelo nome ou pelo número de peito, não pelo CPF.
+CPF é dado pessoal sensível. Em caso de vazamento do banco, hashes bcrypt não são reversíveis. A desvantagem é que não dá para buscar pelo CPF exato — no check-in presencial, o admin consulta pelo nome ou pelo número de peito, não pelo CPF. Na listagem de participantes, o CPF é exibido mascarado (`***.XXX.XXX-**`) a partir do hash.
 
 ### Por que existe o PedidoRascunho?
 
@@ -139,13 +304,21 @@ Para cartão isso não é necessário porque o pagamento é processado e confirm
 
 Decisão do cliente. O preço do Policial nunca varia com o lote — é fixo para todas as forças de segurança. O Lote só afeta o preço do Cidadão (1º Lote: R$80, 2º: R$85, 3º: R$90).
 
-### Por que o frontend polling ao invés de WebSocket?
+### Por que o frontend usa polling ao invés de WebSocket?
 
 Simplicidade. WebSockets em Vercel Functions têm limitações e custo maior. Polling a cada 3 segundos é aceitável para a UX de pagamento PIX — a janela de 30 minutos dá tempo suficiente. O polling para quando o status é confirmado ou quando o componente é desmontado.
 
 ### Por que o card form usa iframes do Mercado Pago?
 
 Conformidade com PCI-DSS. Os dados do cartão nunca trafegam pelo nosso servidor — o SDK do MP captura direto nos iframes, gera um token de uso único, e esse token é o que enviamos para a nossa API. Se nosso servidor fosse comprometido, nenhum dado de cartão estaria exposto.
+
+### Por que o admin usa proxy em vez de chamar apps/api diretamente?
+
+O `admin_token` é um cookie httpOnly — o JavaScript do browser não pode lê-lo. Portanto, o browser não pode incluí-lo em chamadas fetch para `apps/api`. O proxy `/api/proxy/[...path]` roda server-side no app admin, lê o cookie e adiciona o header `Authorization: Bearer` antes de repassar a requisição. Ver diagrama em Arquitetura.
+
+### Por que o e-mail é fire-and-forget?
+
+Falha de envio de e-mail não deve bloquear nem reverter o pagamento já confirmado. O pagamento já foi registrado no banco — o e-mail é uma conveniência. Se falhar, o usuário ainda pode consultar o pedido em `/pedido/[id]`.
 
 ---
 
@@ -175,40 +348,46 @@ const cpf = inscricao.cpf  // e salvar direto no banco
 
 ### 4. Rate limiting
 
-O endpoint `POST /api/v1/inscricao` tem rate limiting em memória: máximo 10 requisições por IP por minuto. É uma proteção básica contra bots. Em produção com múltiplas instâncias Vercel, considerar migrar para Redis.
+- `POST /api/v1/inscricao` — 10 req/min por IP (proteção contra bots no fluxo de inscrição)
+- `POST /api/v1/admin/auth` — 5 req/15min por IP (proteção contra brute-force no login admin)
+
+Em produção com múltiplas instâncias Vercel, considerar migrar para Redis (atualmente o rate limiting é in-memory por instância).
+
+### 5. Proteção do cron
+
+`GET /api/v1/cron/expirar-pix` só é executado se o header `Authorization: Bearer {CRON_SECRET}` estiver correto. O Vercel Cron adiciona esse header automaticamente quando configurado via `vercel.json`.
 
 ---
 
-## Banco de Dados
+## Banco de Dados — Troubleshooting
 
-### Migrations
-
-Toda mudança de schema deve ter uma migration correspondente. Nunca edite o schema sem criar uma migration — o Prisma detecta divergências e se recusa a rodar em produção.
+### Prisma não encontra DATABASE_URL
 
 ```bash
-# Para criar uma nova migration:
-cd packages/db
-DATABASE_URL="..." npx prisma migrate dev --name nome_descritivo
-
-# Ou com o arquivo .env configurado:
-pnpm db:migrate
+# packages/db/.env deve ter a DATABASE_URL
+grep DATABASE_URL apps/api/.env.local > packages/db/.env
 ```
 
-### Seed
+### Migration diverge do schema aplicado
 
-O seed cria as 4 categorias e 2 lotes iniciais. Rodar em caso de reset do banco:
+Isso acontece se o schema foi editado sem criar migration (ex: `db push` em vez de `migrate dev`).
 
 ```bash
+cd packages/db
+npx prisma migrate reset --force  # APAGA TODOS OS DADOS
+# Depois rodar os seeds:
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+cd ../../apps/api
+npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-admin.ts
+```
+
+### Seed falha com erro de aspas (zsh)
+
+```bash
+# Rodar dentro do diretório correto — o compilador options tem aspas simples
 cd packages/db
 npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
 ```
-
-### Migrations aplicadas
-
-| Migration | O que faz |
-|---|---|
-| `20260416000000_init` | Cria todas as tabelas e enums |
-| `20260421000000_add_pedido_rascunho` | Adiciona tabela `PedidoRascunho` com FK em cascata |
 
 ---
 
@@ -218,19 +397,21 @@ O fluxo é um multi-step dentro de `apps/web/src/app/inscricao/`. O estado é co
 
 ```
 inscricao/
-├── layout.tsx              ← InscricaoProvider + StepProgressBar + container
-├── page.tsx                ← server component, fetch categorias → SelecionarCategoriaStep
+├── layout.tsx                   ← InscricaoProvider + StepProgressBar + container
+├── page.tsx                     ← server component, fetch categorias → SelecionarCategoriaStep
 ├── SelecionarCategoriaStep.tsx  ← client, step 1
-├── StepProgressBar.tsx     ← client, detecta step pelo pathname
+├── StepProgressBar.tsx          ← client, detecta step pelo pathname
 ├── dados/
-│   ├── page.tsx            ← server component, fetch categorias → DadosStep
-│   └── DadosStep.tsx       ← client, react-hook-form, múltiplos inscritos
+│   ├── page.tsx                 ← server component, fetch categorias → DadosStep
+│   └── DadosStep.tsx            ← client, react-hook-form, múltiplos inscritos
 ├── revisao/
-│   ├── page.tsx            ← server component, fetch categorias → RevisaoStep
-│   └── RevisaoStep.tsx     ← client, resumo + método pagamento + checkboxes
-└── pagamento/
-    ├── page.tsx            ← client (precisa do context), chama POST /inscricao
-    └── CardPaymentStep.tsx ← client, carrega SDK MP, mp.cardForm()
+│   ├── page.tsx                 ← server component, fetch categorias → RevisaoStep
+│   └── RevisaoStep.tsx          ← client, resumo + método pagamento + checkboxes
+├── pagamento/
+│   ├── page.tsx                 ← client (precisa do context), chama POST /inscricao
+│   └── CardPaymentStep.tsx      ← client, carrega SDK MP, mp.cardForm()
+└── confirmacao/
+    └── page.tsx                 ← client, exibe resumo do pedido, chama limparContexto()
 ```
 
 **Padrão adotado:** server components fazem o fetch de dados (categorias) e passam para client components via props. Isso evita waterfalls e mantém a lógica de estado no client onde pertence.
@@ -239,14 +420,19 @@ inscricao/
 
 O contexto persiste o estado entre os steps enquanto o usuário está na sessão. Se o usuário fechar o browser e voltar, o contexto é perdido — ele precisa recomeçar do Step 1.
 
-Estado atual:
 ```typescript
-{
-  categoriaId: string | null      // step 1
-  inscricoes: InscricaoInput[]    // step 2
-  metodoPagamento: 'PIX' | 'CARTAO' | null  // step 3
-  // pedidoId: string | null      // a adicionar na US-014
+interface InscricaoState {
+  categoriaId: string | null
+  setCategoriaId: (id: string | null) => void
+  inscricoes: InscricaoInput[]
+  setInscricoes: (inscritos: InscricaoInput[]) => void
+  metodoPagamento: 'PIX' | 'CARTAO' | null
+  setMetodoPagamento: (m: 'PIX' | 'CARTAO') => void
+  pedidoId: string | null      // preenchido em /inscricao/pagamento após POST /api/v1/inscricao
+  setPedidoId: (id: string | null) => void
 }
+// Provider envolve src/app/inscricao/layout.tsx
+// limparContexto() chamado em /inscricao/confirmacao após exibir o resumo
 ```
 
 ---
@@ -333,6 +519,37 @@ Headers: `Cache-Control: public, max-age=30`
 Chamado pelo Mercado Pago. Não chamar diretamente.
 Valida assinatura → processa → retorna 200 em menos de 5s.
 
+### POST /api/v1/admin/auth
+
+**Request:** `{ email: string, senha: string }`
+**Response 200:** `{ token: string }`
+**Erros:** 401 (credenciais inválidas), 429 (rate limit: 5 req/15min/IP)
+
+### GET /api/v1/cron/expirar-pix
+
+Executado pelo Vercel Cron a cada 15 minutos. Requer header `Authorization: Bearer {CRON_SECRET}`.
+Busca pedidos PIX com `status: AGUARDANDO_PAGAMENTO` e `expiresAt < now()` e os atualiza para `EXPIRADO`.
+
+---
+
+## Variáveis de Ambiente
+
+| Variável | Onde usar | Descrição |
+|---|---|---|
+| `DATABASE_URL` | `apps/api`, `packages/db` | Neon PostgreSQL connection string |
+| `MP_ACCESS_TOKEN` | `apps/api` | Token server-side do Mercado Pago (`TEST-` em dev, `APP_USR-` em prod) |
+| `MP_WEBHOOK_SECRET` | `apps/api` | Segredo para validar assinatura HMAC-SHA256 do webhook |
+| `RESEND_API_KEY` | `apps/api` | Chave da API do Resend para envio de e-mails |
+| `EMAIL_FROM` | `apps/api` | Remetente dos e-mails (ex: `noreply@corridapc.com.br`) |
+| `CRON_SECRET` | `apps/api` | Protege `GET /api/v1/cron/expirar-pix` — Vercel Cron envia automaticamente |
+| `ADMIN_JWT_SECRET` | `apps/api`, `apps/admin` | Assina e verifica o JWT do painel admin (HS256, TTL 8h) |
+| `NEXT_PUBLIC_API_URL` | `apps/web`, `apps/admin` | URL pública de `apps/api` (ex: `http://localhost:3001`) |
+| `NEXT_PUBLIC_APP_URL` | `apps/api`, `apps/web` | URL pública de `apps/web` (ex: `http://localhost:3000`) — usada nos e-mails |
+| `NEXT_PUBLIC_MP_PUBLIC_KEY` | `apps/web` | Chave pública do MP exposta ao browser (para o SDK de card form) |
+
+> ⚠️ `NEXT_PUBLIC_MP_PUBLIC_KEY` ≠ `MP_ACCESS_TOKEN` — são chaves completamente diferentes. A pública vai para o browser; a de acesso fica só no servidor.
+> ⚠️ `MP_PUBLIC_KEY` (sem o prefixo NEXT_PUBLIC_) não deve ser usada em server-side — use `MP_ACCESS_TOKEN`.
+
 ---
 
 ## Mercado Pago — Notas Práticas
@@ -342,8 +559,6 @@ Valida assinatura → processa → retorna 200 em menos de 5s.
 Existem dois sets de credenciais:
 - **Teste (`TEST-`)** — use em desenvolvimento. Pagamentos são simulados, sem dinheiro real.
 - **Produção (`APP_USR-`)** — use somente no deploy final. Cobranças reais.
-
-O cliente enviou as credenciais de produção. Em desenvolvimento, use sempre as de teste que estão no `.env.local`.
 
 `CLIENT_ID` e `CLIENT_SECRET` não são usados nesta integração.
 
@@ -355,7 +570,7 @@ O Mercado Pago precisa de uma URL pública para enviar webhooks. Em desenvolvime
 ngrok http 3001
 # Copiar a URL https://xxx.ngrok.io
 # Configurar no painel MP: https://xxx.ngrok.io/api/v1/webhook/mercadopago
-# Adicionar o MP_WEBHOOK_SECRET gerado ao .env.local
+# Adicionar o MP_WEBHOOK_SECRET gerado ao apps/api/.env.local
 ```
 
 ### Simular pagamento PIX (sandbox)
@@ -381,18 +596,44 @@ const REJECTION_MESSAGES = {
 
 ---
 
-## Painel Admin — Pendente (US-018 a US-023)
+## Troubleshooting Comum
 
-O `apps/admin` existe mas não tem implementação ainda. As stories planejadas:
+### Webhook recebendo 401
 
-| Story | Funcionalidade |
-|---|---|
-| US-018 | Autenticação JWT com bcrypt, middleware de proteção |
-| US-019 | Dashboard: totais de inscrições, arrecadação, vagas por categoria |
-| US-020 | Lista de participantes com filtros (categoria, status, camiseta) + exportação CSV |
-| US-021 | Detalhe do participante, edição de dados, AdminLog de alterações |
-| US-022 | Check-in presencial: busca por nome, confirma vínculo policial |
-| US-023 | Importação de planilha de cronometragem → número de peito |
+Verifique:
+1. `MP_WEBHOOK_SECRET` está preenchido em `apps/api/.env.local`
+2. O manifest está na ordem correta: `id:{...};request-id:{...};ts:{...};`
+3. Está usando as credenciais corretas (TEST- para sandbox)
+
+### PIX gerado mas participantes não criados
+
+O webhook não foi processado. Possíveis causas:
+- `MP_WEBHOOK_SECRET` incorreto (401 silencioso)
+- URL do webhook não configurada no painel MP
+- Timeout — o webhook precisa responder em menos de 5s
+
+Verificar logs da Vercel (em produção) ou do servidor local.
+
+### Admin retorna 401 em rotas protegidas
+
+O proxy em `apps/admin/api/proxy` não encontrou o cookie `admin_token`. Verifique:
+1. O login foi feito com sucesso (cookie definido via `/api/auth/session`)
+2. `ADMIN_JWT_SECRET` é o mesmo em `apps/api` e `apps/admin`
+3. O token não expirou (TTL: 8h)
+
+### E-mail não chegou após pagamento
+
+O envio é fire-and-forget — falhas não são expostas ao usuário. Verifique:
+1. `RESEND_API_KEY` está preenchida em `apps/api/.env.local`
+2. `EMAIL_FROM` usa um domínio verificado no Resend
+3. Logs do servidor para erros silenciosos no envio
+
+### Cron não expira pedidos PIX
+
+Verifique:
+1. `CRON_SECRET` está preenchida em `apps/api/.env.local`
+2. `vercel.json` em `apps/api` tem a rota `/api/v1/cron/expirar-pix` configurada
+3. O header `Authorization: Bearer {CRON_SECRET}` está sendo enviado
 
 ---
 
@@ -418,68 +659,20 @@ O `apps/admin` existe mas não tem implementação ainda. As stories planejadas:
 
 ---
 
-## Troubleshooting Comum
-
-### Prisma não encontra DATABASE_URL
-
-```bash
-# packages/db/.env deve ter a DATABASE_URL
-# Se não existir:
-grep DATABASE_URL .env.local > packages/db/.env
-```
-
-### Migration diverge do schema aplicado
-
-Isso acontece se o schema foi editado sem criar migration (ex: `db push` em vez de `migrate dev`).
-
-```bash
-cd packages/db
-npx prisma migrate reset --force  # APAGA TODOS OS DADOS
-# Depois rodar o seed:
-npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
-```
-
-### Webhook recebendo 401
-
-Verifique:
-1. `MP_WEBHOOK_SECRET` está preenchido no `.env.local`
-2. O manifest está na ordem correta: `id:{...};request-id:{...};ts:{...};`
-3. Está usando as credenciais corretas (TEST- para sandbox)
-
-### PIX gerado mas participantes não criados
-
-O webhook não foi processado. Possíveis causas:
-- `MP_WEBHOOK_SECRET` incorreto (401 silencioso)
-- URL do webhook não configurada no painel MP
-- Timeout — o webhook precisa responder em menos de 5s
-
-Verificar logs da Vercel (em produção) ou do servidor local.
-
-### Seed falha com erro de aspas (zsh)
-
-```bash
-# Rodar dentro de packages/db/
-cd packages/db
-npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
-```
-
----
-
 ## Ciclo de Atualização desta Documentação
 
 Esta documentação deve ser atualizada ao final de cada fase de desenvolvimento. Uma "fase" corresponde a um grupo de stories que entregam uma funcionalidade completa ao usuário ou ao organizador.
 
-**Fases planejadas:**
+**Fases:**
 
-| Fase | Stories | Entrega |
-|---|---|---|
-| Fase 1 ✅ | US-001 a US-013 | Fluxo de inscrição e pagamento completo |
-| Fase 2 | US-014 a US-017 | Confirmação, e-mail e expiração automática |
-| Fase 3 | US-018 a US-023 | Painel admin, check-in e cronometragem |
+| Fase | Stories | Entrega | Status |
+|---|---|---|---|
+| Fase 1 | US-001 a US-013 | Fluxo de inscrição e pagamento completo | ✅ |
+| Fase 2 | US-014 a US-017 | Confirmação pós-pagamento, e-mail, cron de expiração, status público | ✅ |
+| Fase 3 | US-018 a US-023 | Painel admin completo: auth, dashboard, participantes, check-in, importação | ✅ |
 
 Ao final de cada fase, atualize:
 - A tabela de estado no `CLAUDE.md`
-- A seção "Próximas stories" no `CLAUDE.md`
 - As seções relevantes neste `DOCS.md` (rotas, modelos, decisões de projeto)
 
 Manter essa documentação viva é mais valioso do que qualquer comentário no código — ela captura o **porquê** das decisões, não apenas o **o quê**.

@@ -10,7 +10,7 @@ Monorepo com frontend (landing page + fluxo de inscrição), backend (API + webh
 
 ---
 
-## Estado Atual — Fase 1 concluída (US-001 a US-013)
+## Estado Atual — Todas as stories concluídas (US-001 a US-023)
 
 | Story | Status | O que foi feito |
 |---|---|---|
@@ -27,14 +27,22 @@ Monorepo com frontend (landing page + fluxo de inscrição), backend (API + webh
 | US-011 | ✅ | `/inscricao/pagamento` PIX — QR code base64, countdown colorido, polling 3s, cleanup |
 | US-012 | ✅ | Cartão — CardPaymentStep iframes, `POST /inscricao/[id]/cartao`, transação atômica |
 | US-013 | ✅ | Webhook MP — HMAC-SHA256 x-signature, idempotência, persiste participantes PIX |
+| US-014 | ✅ | `/inscricao/confirmacao` — tela pós-pagamento, limpar contexto, `pedidoId` no InscricaoContext |
+| US-015 | ✅ | `/pedido/[id]` — página de status público, consulta API sem login |
+| US-016 | ✅ | E-mail de confirmação — `packages/email`, React Email + Resend, fire-and-forget no webhook |
+| US-017 | ✅ | Worker expiração PIX — Vercel Cron `/api/v1/cron/expirar-pix` a cada 15min, protegido por `CRON_SECRET` |
+| US-018 | ✅ | Auth admin — JWT (jose), login page, cookie httpOnly `admin_token`, middleware, `seed-admin.ts` |
+| US-019 | ✅ | Dashboard admin — totalizadores, vagas por categoria, receita, camisetas; server component |
+| US-020 | ✅ | Lista participantes — tabela paginada (20/pág), filtros, busca por nome/e-mail, CPF mascarado |
+| US-021 | ✅ | Check-in presencial — busca por nome/e-mail, registro `checkinRealizadoEm`, proxy routes, estado discriminado |
+| US-022 | ✅ | Importação planilha — upload CSV/XLSX, preview 10 registros, vinculação números de peito por ordem `createdAt` |
+| US-023 | ✅ | CPF mascarado na listagem admin, proxy httpOnly para chamadas à API interna, relatório pós-importação |
 
-### Próximas stories (prd.json)
-- **US-014** — `/inscricao/confirmacao` (tela pós-pagamento, limpar contexto, pedidoId no context)
-- **US-015** — `/pedido/[id]` (status público sem login)
-- **US-016** — E-mail de confirmação (packages/email + Resend)
-- **US-017** ✅ — Worker expiração PIX (Vercel Cron a cada 15min) — endpoint + vercel.json
-- **US-018** ✅ — Autenticação admin: `POST /api/v1/admin/auth`, middleware JWT (jose), login page, cookie httpOnly, seed-admin.ts
-- **US-019 a US-023** — Painel admin + check-in + importação planilha
+### Pendências pós-MVP
+- Configurar `DATABASE_URL` e demais env vars no ambiente de produção (Neon + Vercel)
+- Deploy das três apps no Vercel (`apps/web`, `apps/api`, `apps/admin`) com domínios corretos
+- Registrar webhook do Mercado Pago em produção com `MP_WEBHOOK_SECRET`
+- Testes E2E do fluxo de inscrição (PIX e Cartão) em staging
 
 ### Banco de Dados
 - Neon PostgreSQL — connection string em `.env.local` (DATABASE_URL)
@@ -51,7 +59,7 @@ corrida-pc-frontend/
 ├── apps/
 │   ├── web/          ← Next.js 14 — landing page + fluxo /inscricao (porta 3000)
 │   ├── api/          ← Next.js 14 — REST API + webhooks MP (porta 3001)
-│   └── admin/        ← Next.js 14 — painel admin + check-in (porta 3002, não iniciado)
+│   └── admin/        ← Next.js 14 — painel admin + check-in (porta 3002)
 ├── packages/
 │   ├── db/           ← Prisma schema + migrations + client singleton
 │   ├── types/        ← interfaces TypeScript compartilhadas
@@ -278,10 +286,16 @@ POST /api/v1/admin/auth                ← login admin → JWT (rate limit: 5/15
 
 ### apps/admin (porta 3002)
 ```
-/login                     ← formulário email+senha (react-hook-form + Zod)
-/dashboard                 ← protegido por middleware JWT
-/logout                    ← limpa cookie admin_token e redireciona para /login
-/api/auth/session          ← POST interno: recebe token, define cookie httpOnly
+/login                         ← formulário email+senha (react-hook-form + Zod)
+/dashboard                     ← totalizadores: inscritos, receita, vagas, camisetas (server component)
+/participantes                 ← tabela paginada, filtros por categoria/status/camiseta, busca nome/e-mail
+/participantes/[id]            ← detalhe do participante, edição inline, alteração de status com motivo
+/checkin                       ← busca participante por nome/e-mail, registro checkinRealizadoEm
+/checkin/[numeroPeito]         ← check-in direto pelo número de peito
+/checkin/importar              ← upload CSV/XLSX, preview 10 registros, vincula números de peito
+/logout                        ← limpa cookie admin_token e redireciona para /login
+/api/auth/session              ← POST interno: recebe token, define cookie httpOnly
+/api/proxy/[...path]           ← proxy httpOnly para apps/api (evita expor JWT ao browser)
 ```
 middleware.ts protege todas as rotas exceto /login e /api/auth/session.
 Cookie: admin_token (httpOnly, sameSite: strict, maxAge: 8h).
@@ -293,8 +307,8 @@ Cookie: admin_token (httpOnly, sameSite: strict, maxAge: 8h).
 /inscricao/dados           ← Step 2: formulário
 /inscricao/revisao         ← Step 3: revisão + pagamento
 /inscricao/pagamento       ← Step 4: PIX ou Cartão
-/inscricao/confirmacao     ← Step 5: confirmação (US-014 — pendente)
-/pedido/[id]               ← status público (US-015 — pendente)
+/inscricao/confirmacao     ← Step 5: confirmação, limpa contexto, exibe resumo do pedido
+/pedido/[id]               ← status público sem login, consulta GET /api/v1/inscricao/[id]
 ```
 
 ---
@@ -310,9 +324,11 @@ interface InscricaoState {
   setInscricoes: (inscritos: InscricaoInput[]) => void
   metodoPagamento: 'PIX' | 'CARTAO' | null
   setMetodoPagamento: (m: 'PIX' | 'CARTAO') => void
-  // US-014: adicionar pedidoId: string | null e setPedidoId
+  pedidoId: string | null           // preenchido em /inscricao/pagamento após POST /api/v1/inscricao
+  setPedidoId: (id: string | null) => void
 }
 // Provider envolve src/app/inscricao/layout.tsx
+// limparContexto() chamado em /inscricao/confirmacao após exibir o resumo
 ```
 
 ---
@@ -355,6 +371,26 @@ type PageState =
   | { kind: 'pix'; data: PedidoData }
   | { kind: 'expired' }
   | { kind: 'error'; message: string }
+```
+
+### Proxy httpOnly no admin (padrão usado em US-021, US-022, US-023)
+```typescript
+// apps/admin/src/app/api/proxy/[...path]/route.ts
+// Repassa chamadas do browser para apps/api sem expor o JWT admin ao cliente
+export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
+  const token = req.cookies.get('admin_token')?.value
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/${params.path.join('/')}${req.nextUrl.search}`
+  const res = await fetch(apiUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const data = await res.json()
+  return NextResponse.json(data, { status: res.status })
+}
+// Motivo: o admin_token é httpOnly (inacessível ao JS do browser), portanto
+// o browser não pode incluí-lo diretamente em fetch() para apps/api.
+// O proxy roda no edge/server do admin, lê o cookie e faz a chamada autenticada.
 ```
 
 ### Transação atômica com vagas (padrão usado em US-012 e US-013)

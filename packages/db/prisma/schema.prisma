@@ -7,7 +7,105 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
+model Categoria {
+  id            String         @id @default(cuid())
+  nome          String
+  percursoKm    Int
+  tipo          TipoCategoria
+  vagasTotal    Int            @default(150)
+  vagasOcupadas Int            @default(0)
+  createdAt     DateTime       @default(now())
+  participantes Participante[]
+}
+
+model Lote {
+  id           String   @id @default(cuid())
+  nome         String
+  precoCidadao Float
+  ativo        Boolean  @default(false)
+  dataInicio   DateTime
+  dataFim      DateTime
+  createdAt    DateTime @default(now())
+}
+
+model Pedido {
+  id              String          @id @default(cuid())
+  total           Float
+  status          StatusPedido    @default(AGUARDANDO_PAGAMENTO)
+  metodoPagamento MetodoPagamento
+  paymentId       String?         @unique
+  expiresAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  pagamento       Pagamento?
+  participantes   Participante[]
+  rascunho        PedidoRascunho?
+}
+
+model PedidoRascunho {
+  id             String   @id @default(cuid())
+  pedidoId       String   @unique
+  inscricoesJson String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+}
+
+model Participante {
+  id                 String          @id @default(cuid())
+  nome               String
+  cpf                String
+  dataNascimento     DateTime
+  telefone           String
+  email              String
+  contatoEmergencia  String
+  tamanhoCamiseta    TamanhoCamiseta
+  categoriaId        String
+  pedidoId           String
+  numeroPeito        Int?
+  checkinRealizadoEm DateTime?
+  createdAt          DateTime        @default(now())
+  categoria          Categoria       @relation(fields: [categoriaId], references: [id])
+  pedido             Pedido          @relation(fields: [pedidoId], references: [id])
+
+  @@index([cpf])
+  @@index([email])
+  @@index([categoriaId])
+}
+
+model Pagamento {
+  id                String          @id @default(cuid())
+  pedidoId          String          @unique
+  paymentIdGateway  String          @unique
+  valor             Float
+  metodo            MetodoPagamento
+  status            String
+  webhookRecebidoEm DateTime?
+  createdAt         DateTime        @default(now())
+  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
+}
+
+model AdminUser {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  senha     String
+  nome      String
+  role      AdminRole  @default(OPERACIONAL)
+  createdAt DateTime   @default(now())
+  logs      AdminLog[]
+}
+
+model AdminLog {
+  id            String    @id @default(cuid())
+  adminId       String
+  acao          String
+  entidade      String
+  entidadeId    String
+  valorAnterior String?
+  valorNovo     String?
+  createdAt     DateTime  @default(now())
+  admin         AdminUser @relation(fields: [adminId], references: [id])
+}
 
 enum TipoCategoria {
   CIDADAO
@@ -39,106 +137,4 @@ enum TamanhoCamiseta {
 enum AdminRole {
   TOTAL
   OPERACIONAL
-}
-
-// ─── Models ──────────────────────────────────────────────────────────────────
-
-model Categoria {
-  id            String         @id @default(cuid())
-  nome          String
-  percursoKm    Int
-  tipo          TipoCategoria
-  vagasTotal    Int            @default(150)
-  vagasOcupadas Int            @default(0)
-  participantes Participante[]
-  createdAt     DateTime       @default(now())
-}
-
-model Lote {
-  id            String   @id @default(cuid())
-  nome          String
-  precoCidadao  Float
-  ativo         Boolean  @default(false)
-  dataInicio    DateTime
-  dataFim       DateTime
-  createdAt     DateTime @default(now())
-}
-
-model Pedido {
-  id              String          @id @default(cuid())
-  total           Float
-  status          StatusPedido    @default(AGUARDANDO_PAGAMENTO)
-  metodoPagamento MetodoPagamento
-  paymentId       String?         @unique
-  expiresAt       DateTime?
-  participantes   Participante[]
-  pagamento       Pagamento?
-  rascunho        PedidoRascunho?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-}
-
-model PedidoRascunho {
-  id             String   @id @default(cuid())
-  pedidoId       String   @unique
-  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  inscricoesJson String
-  expiresAt      DateTime
-  createdAt      DateTime @default(now())
-}
-
-model Participante {
-  id                String          @id @default(cuid())
-  nome              String
-  cpf               String
-  dataNascimento    DateTime
-  telefone          String
-  email             String
-  contatoEmergencia String
-  tamanhoCamiseta   TamanhoCamiseta
-  categoriaId       String
-  categoria         Categoria       @relation(fields: [categoriaId], references: [id])
-  pedidoId          String
-  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
-  numeroPeito       Int?
-  checkinRealizadoEm DateTime?
-  createdAt         DateTime        @default(now())
-
-  @@index([cpf])
-  @@index([email])
-  @@index([categoriaId])
-}
-
-model Pagamento {
-  id                String          @id @default(cuid())
-  pedidoId          String          @unique
-  pedido            Pedido          @relation(fields: [pedidoId], references: [id])
-  paymentIdGateway  String          @unique
-  valor             Float
-  metodo            MetodoPagamento
-  status            String
-  webhookRecebidoEm DateTime?
-  createdAt         DateTime        @default(now())
-}
-
-model AdminUser {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  senha     String
-  nome      String
-  role      AdminRole  @default(OPERACIONAL)
-  logs      AdminLog[]
-  createdAt DateTime   @default(now())
-}
-
-model AdminLog {
-  id            String    @id @default(cuid())
-  adminId       String
-  admin         AdminUser @relation(fields: [adminId], references: [id])
-  acao          String
-  entidade      String
-  entidadeId    String
-  valorAnterior String?
-  valorNovo     String?
-  createdAt     DateTime  @default(now())
 }
