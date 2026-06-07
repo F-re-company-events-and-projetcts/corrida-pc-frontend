@@ -12,6 +12,7 @@ import { useInscricao } from '@/contexts/InscricaoContext'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
 import { Typography } from '@/components/atoms/typography'
+import { DateSelectInput } from '@/components/atoms/DateSelectInput'
 import { cn } from '@/lib/utils'
 
 const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
@@ -268,10 +269,13 @@ export function DadosStep({ categorias }: Props) {
               <label className="block text-sm font-bold text-secondary uppercase tracking-wider mb-1">
                 Data de nascimento
               </label>
-              <Input
-                type="date"
-                {...register(`inscritos.${idx}.dataNascimento`)}
-                className={fieldErrors?.dataNascimento ? 'border-red-500' : ''}
+              <DateSelectInput
+                value={watch(`inscritos.${idx}.dataNascimento`) ?? ''}
+                onChange={(val) => {
+                  const field = register(`inscritos.${idx}.dataNascimento`)
+                  field.onChange({ target: { name: field.name, value: val } })
+                }}
+                hasError={!!fieldErrors?.dataNascimento}
               />
               {fieldErrors?.dataNascimento && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.dataNascimento.message}</p>
