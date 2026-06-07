@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
           OR: [
             { nome: { contains: q, mode: "insensitive" as const } },
             { email: { contains: q, mode: "insensitive" as const } },
+            { pedido: { numeroPedido: { contains: q, mode: "insensitive" as const } } },
           ],
         }
       : {}),
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
           select: { nome: true, percursoKm: true },
         },
         pedido: {
-          select: { id: true, status: true, metodoPagamento: true, total: true },
+          select: { id: true, numeroPedido: true, status: true, metodoPagamento: true, total: true },
         },
       },
       orderBy: { createdAt: "desc" },

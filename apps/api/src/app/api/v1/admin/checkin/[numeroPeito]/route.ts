@@ -41,7 +41,7 @@ export async function GET(
       numeroPeito: true,
       tamanhoCamiseta: true,
       checkinRealizadoEm: true,
-      categoria: { select: { nome: true, percursoKm: true } },
+      categoria: { select: { nome: true, percursoKm: true, tipo: true } },
       pedido: { select: { status: true } },
     },
   });
