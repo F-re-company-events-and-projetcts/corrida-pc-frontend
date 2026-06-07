@@ -57,10 +57,13 @@ model Participante {
   id                 String          @id @default(cuid())
   nome               String
   cpf                String
+  cpfCriptografado   String?
   dataNascimento     DateTime
   telefone           String
   email              String
   contatoEmergencia  String
+  sexo               Sexo
+  grupoCorrida      String?
   tamanhoCamiseta    TamanhoCamiseta
   categoriaId        String
   pedidoId           String
@@ -131,6 +134,12 @@ enum StatusPedido {
 enum MetodoPagamento {
   PIX
   CARTAO
+}
+
+enum Sexo {
+  MASCULINO
+  FEMININO
+  OUTRO
 }
 
 enum TamanhoCamiseta {
