@@ -75,6 +75,7 @@ export const Registration = async () => {
                         return (
                             <PricingCard
                                 key={props.id}
+                                id={props.id}
                                 title={props.title}
                                 priceAtual={props.priceAtual}
                                 type={props.type}

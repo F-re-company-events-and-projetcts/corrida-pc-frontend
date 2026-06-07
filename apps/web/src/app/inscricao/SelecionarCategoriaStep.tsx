@@ -1,6 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import type { Categoria } from '@corrida/types'
 import { useInscricao } from '@/contexts/InscricaoContext'
@@ -15,7 +16,17 @@ interface Props {
 
 export function SelecionarCategoriaStep({ categorias }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { categoriaId, setCategoriaId } = useInscricao()
+
+  // Auto-selecionar categoria vinda da landing page via ?cat=ID
+  useEffect(() => {
+    const catParam = searchParams.get('cat')
+    if (catParam && !categoriaId) {
+      const encontrada = categorias.find((c) => c.id === catParam && c.vagasDisponiveis > 0)
+      if (encontrada) setCategoriaId(encontrada.id)
+    }
+  }, [searchParams, categorias, categoriaId, setCategoriaId])
 
   const selected = categorias.find((c) => c.id === categoriaId)
   const isPolicial = selected?.tipo === 'POLICIAL'
@@ -101,11 +112,7 @@ export function SelecionarCategoriaStep({ categorias }: Props) {
                       <span className="text-sm text-gray-400">Lote indisponível</span>
                     )}
                   </div>
-                  {!esgotada && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {cat.vagasDisponiveis} vaga{cat.vagasDisponiveis !== 1 ? 's' : ''} disponível{cat.vagasDisponiveis !== 1 ? 'is' : ''}
-                    </p>
-                  )}
+                  {/* vagas disponíveis ocultadas intencionalmente */}
                 </div>
               </div>
             </button>

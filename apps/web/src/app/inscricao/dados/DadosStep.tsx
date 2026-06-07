@@ -16,16 +16,29 @@ import { cn } from '@/lib/utils'
 
 const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
 
-function calcularIdade(dateStr: string): number {
+// Data do evento: 27/09/2026
+const EVENTO_DATA = new Date('2026-09-27T12:00:00Z')
+
+function idadeNaDataDoEvento(dateStr: string): number {
   const birth = new Date(dateStr + 'T12:00:00')
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
+  let age = EVENTO_DATA.getFullYear() - birth.getFullYear()
   if (
-    today.getMonth() < birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
+    EVENTO_DATA.getMonth() < birth.getMonth() ||
+    (EVENTO_DATA.getMonth() === birth.getMonth() && EVENTO_DATA.getDate() < birth.getDate())
   ) age--
   return age
 }
+
+// Mínimo de idade na data do evento por percurso
+function idadeMinima(percursoKm: number): number {
+  return percursoKm >= 10 ? 16 : 15
+}
+
+const SEXOS = [
+  { value: 'MASCULINO', label: 'Masculino' },
+  { value: 'FEMININO', label: 'Feminino' },
+  { value: 'OUTRO', label: 'Prefiro não informar' },
+] as const
 
 const InscritoFormSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -33,8 +46,8 @@ const InscritoFormSchema = z.object({
   dataNascimento: z
     .string()
     .min(1, 'Data de nascimento é obrigatória')
-    .refine((val) => !val || calcularIdade(val) >= 15, {
-      message: 'Participante deve ter no mínimo 15 anos',
+    .refine((val) => !val || idadeNaDataDoEvento(val) >= 15, {
+      message: 'Participante deve ter no mínimo 15 anos na data do evento (27/09/2026)',
     }),
   telefone: z
     .string()
@@ -42,30 +55,52 @@ const InscritoFormSchema = z.object({
     .regex(/^\d+$/, 'Apenas números'),
   email: z.string().email('E-mail inválido'),
   contatoEmergencia: z.string().min(3, 'Contato de emergência deve ter no mínimo 3 caracteres'),
+  sexo: z.enum(['MASCULINO', 'FEMININO', 'OUTRO'], { required_error: 'Selecione o sexo' }),
+  grupoCorrida: z.string().max(100).optional(),
   tamanhoCamiseta: z.enum(TAMANHOS),
   categoriaId: z.string().min(1, 'Selecione uma categoria'),
 })
 
 type InscritoFormValues = z.infer<typeof InscritoFormSchema>
 
-const DadosFormSchema = z
-  .object({ inscritos: z.array(InscritoFormSchema).min(1).max(5) })
-  .superRefine(({ inscritos }, ctx) => {
-    const seen = new Set<string>()
-    inscritos.forEach((inscrito, idx) => {
-      const key = inscrito.cpf.replace(/\D/g, '')
-      if (key.length === 11 && seen.has(key)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Este CPF já foi adicionado neste pedido',
-          path: ['inscritos', idx, 'cpf'],
-        })
-      }
-      seen.add(key)
+function criarDadosFormSchema(categorias: Categoria[]) {
+  return z
+    .object({ inscritos: z.array(InscritoFormSchema).min(1).max(5) })
+    .superRefine(({ inscritos }, ctx) => {
+      // Dedup CPF
+      const seen = new Set<string>()
+      inscritos.forEach((inscrito, idx) => {
+        const key = inscrito.cpf.replace(/\D/g, '')
+        if (key.length === 11 && seen.has(key)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Este CPF já foi adicionado neste pedido',
+            path: ['inscritos', idx, 'cpf'],
+          })
+        }
+        seen.add(key)
+      })
+      // Idade mínima por categoria na data do evento
+      inscritos.forEach((inscrito, idx) => {
+        if (!inscrito.dataNascimento) return
+        const cat = categorias.find((c) => c.id === inscrito.categoriaId)
+        if (!cat) return
+        const minimo = idadeMinima(cat.percursoKm)
+        const idade = idadeNaDataDoEvento(inscrito.dataNascimento)
+        if (idade < minimo) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Para ${cat.nome}, a idade mínima é ${minimo} anos na data do evento (27/09/2026). Este participante terá ${idade} anos.`,
+            path: ['inscritos', idx, 'dataNascimento'],
+          })
+        }
+      })
     })
-  })
+}
 
-type DadosFormValues = z.infer<typeof DadosFormSchema>
+const DadosFormSchema = criarDadosFormSchema([])
+
+type DadosFormValues = z.infer<ReturnType<typeof criarDadosFormSchema>>
 
 function toInscricaoInput(v: InscritoFormValues): InscricaoInput {
   return {
@@ -80,6 +115,8 @@ const emptyInscrito = (categoriaId: string): InscritoFormValues => ({
   dataNascimento: '',
   telefone: '',
   email: '',
+  sexo: 'MASCULINO',
+  grupoCorrida: '',
   contatoEmergencia: '',
   tamanhoCamiseta: 'M',
   categoriaId,
@@ -93,14 +130,18 @@ export function DadosStep({ categorias }: Props) {
   const router = useRouter()
   const { categoriaId, setInscricoes } = useInscricao()
 
+  // Schema com categorias para validar idade mínima por percurso
+  const schema = criarDadosFormSchema(categorias)
+  type FormValues = z.infer<typeof schema>
+
   const {
     register,
     control,
     handleSubmit,
     watch,
     formState: { errors, isValid },
-  } = useForm<DadosFormValues>({
-    resolver: zodResolver(DadosFormSchema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
     mode: 'onChange',
     defaultValues: {
       inscritos: [emptyInscrito(categoriaId ?? '')],
@@ -238,7 +279,7 @@ export function DadosStep({ categorias }: Props) {
               {(() => {
                 const val = watch(`inscritos.${idx}.dataNascimento`)
                 if (!val || fieldErrors?.dataNascimento) return null
-                const age = calcularIdade(val)
+                const age = idadeNaDataDoEvento(val)
                 if (age >= 15 && age < 18) {
                   return (
                     <p className="mt-1 text-sm text-amber-600">
@@ -281,6 +322,38 @@ export function DadosStep({ categorias }: Props) {
               {fieldErrors?.email && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.email.message}</p>
               )}
+            </div>
+
+            {/* Sexo */}
+            <div>
+              <label className="block text-sm font-bold text-secondary uppercase tracking-wider mb-1">
+                Sexo <span className="text-red-500">*</span>
+              </label>
+              <select
+                {...register(`inscritos.${idx}.sexo`)}
+                className={cn(
+                  'w-full px-3 py-2 rounded-xl border bg-white text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  fieldErrors?.sexo ? 'border-red-500' : 'border-border'
+                )}
+              >
+                {SEXOS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+              {fieldErrors?.sexo && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.sexo.message}</p>
+              )}
+            </div>
+
+            {/* Grupo de corrida */}
+            <div>
+              <label className="block text-sm font-bold text-secondary uppercase tracking-wider mb-1">
+                Grupo de corrida <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+              </label>
+              <Input
+                {...register(`inscritos.${idx}.grupoCorrida`)}
+                placeholder="Nome do seu grupo de corrida"
+              />
             </div>
 
             {/* Contato de emergência */}

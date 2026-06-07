@@ -4,6 +4,7 @@ import { Check, AlertCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface PricingCardProps {
+    id?: string;
     title: string;
     priceAtual: number | null;
     type: "public" | "police";
@@ -14,7 +15,7 @@ interface PricingCardProps {
     disabled?: boolean;
 }
 
-export const PricingCard = ({ title, priceAtual, type, badge, features, lotText, subtext, disabled }: PricingCardProps) => {
+export const PricingCard = ({ id, title, priceAtual, type, badge, features, lotText, subtext, disabled }: PricingCardProps) => {
     const isPolice = type === "police";
     const isSoldOut = disabled;
 
@@ -84,7 +85,7 @@ export const PricingCard = ({ title, priceAtual, type, badge, features, lotText,
                 </button>
             ) : (
                 <Link
-                    href="/inscricao"
+                    href={id ? `/inscricao?cat=${id}` : "/inscricao"}
                     className={cn(
                         "w-full py-3 rounded-lg font-bold text-sm tracking-wide transition-colors text-center block",
                         isPolice
