@@ -13,9 +13,56 @@ const STATUS_OPTIONS = [
 interface Props {
   pedidoId: string;
   statusAtual: string;
+  temParticipantes: boolean;
 }
 
-export function AlterarStatusForm({ pedidoId, statusAtual }: Props) {
+export function ReprocessarButton({ pedidoId }: { pedidoId: string }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  async function handleReprocessar() {
+    if (!confirm("Isso irá criar os participantes e marcar o pedido como PAGO. Confirma?")) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}/reprocessar`, { method: "POST" });
+      const data = await res.json() as { ok?: boolean; participantesCriados?: number; error?: string };
+      if (res.ok) {
+        setResult({ kind: "ok", text: `✓ ${data.participantesCriados} participante(s) criado(s). Recarregue a página.` });
+      } else {
+        setResult({ kind: "err", text: data.error ?? "Erro ao reprocessar." });
+      }
+    } catch {
+      setResult({ kind: "err", text: "Falha de rede." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-amber-400 shadow-sm p-6">
+      <p className="text-sm font-semibold text-gray-700 mb-2">Reprocessar pagamento</p>
+      <p className="text-xs text-gray-500 mb-4">
+        Use quando o pagamento foi aprovado no Mercado Pago mas os participantes não foram criados por erro no webhook.
+        Lê o rascunho do pedido e cria os participantes automaticamente.
+      </p>
+      {result && (
+        <div className={`mb-3 px-3 py-2 rounded-lg text-sm ${result.kind === "ok" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+          {result.text}
+        </div>
+      )}
+      <button
+        onClick={handleReprocessar}
+        disabled={loading}
+        className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
+      >
+        {loading ? "Processando…" : "Reprocessar e criar participantes"}
+      </button>
+    </div>
+  );
+}
+
+export function AlterarStatusForm({ pedidoId, statusAtual, temParticipantes: _ }: Props) {
   const [novoStatus, setNovoStatus] = useState(statusAtual);
   const [motivo, setMotivo] = useState("");
   const [saving, setSaving] = useState(false);

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
-import { AlterarStatusForm } from "./AlterarStatusForm";
+import { AlterarStatusForm, ReprocessarButton } from "./AlterarStatusForm";
 
 const STATUS_LABELS: Record<string, string> = {
   AGUARDANDO_PAGAMENTO: "Aguardando pagamento",
@@ -184,7 +184,12 @@ export default async function PedidoDetalhePage({
         </div>
 
         {/* Alterar status */}
-        <AlterarStatusForm pedidoId={pedido.id} statusAtual={pedido.status} />
+        {/* Reprocessar: mostrar quando não há participantes e há rascunho */}
+        {pedido.participantes.length === 0 && (
+          <ReprocessarButton pedidoId={pedido.id} />
+        )}
+
+        <AlterarStatusForm pedidoId={pedido.id} statusAtual={pedido.status} temParticipantes={pedido.participantes.length > 0} />
 
       </main>
     </div>
