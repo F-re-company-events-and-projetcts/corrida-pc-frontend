@@ -4,6 +4,30 @@ import { useState } from "react";
 
 const TAMANHOS = ["PP", "P", "M", "G", "GG", "XGG"] as const;
 
+// Faixas etárias baseadas na idade na data do evento (27/09/2026)
+const EVENTO_DATA = new Date("2026-09-27T12:00:00Z");
+
+function calcularIdadeEvento(dataNascimento: string): number {
+  const birth = new Date(dataNascimento);
+  let age = EVENTO_DATA.getFullYear() - birth.getFullYear();
+  if (
+    EVENTO_DATA.getMonth() < birth.getMonth() ||
+    (EVENTO_DATA.getMonth() === birth.getMonth() && EVENTO_DATA.getDate() < birth.getDate())
+  ) age--;
+  return age;
+}
+
+function getFaixaEtaria(dataNascimento: string): string {
+  const idade = calcularIdadeEvento(dataNascimento);
+  if (idade < 16) return "Abaixo da idade mínima";
+  if (idade <= 29) return "FX1 — 16 a 29 anos";
+  if (idade <= 39) return "FX2 — 30 a 39 anos";
+  if (idade <= 49) return "FX3 — 40 a 49 anos";
+  if (idade <= 59) return "FX4 — 50 a 59 anos";
+  if (idade <= 64) return "FX5 — 60 a 64 anos";
+  return "FX6 — 65 anos ou mais";
+}
+
 interface Participante {
   id: string;
   nome: string;
@@ -67,13 +91,8 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
   const [savingCheckin, setSavingCheckin] = useState(false);
   const [msgCheckin, setMsgCheckin] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  const idade = (() => {
-    const nasc = new Date(p.dataNascimento);
-    const hoje = new Date();
-    let a = hoje.getFullYear() - nasc.getFullYear();
-    if (hoje < new Date(hoje.getFullYear(), nasc.getMonth(), nasc.getDate())) a--;
-    return a;
-  })();
+  const idade = calcularIdadeEvento(p.dataNascimento);
+  const faixaEtaria = getFaixaEtaria(p.dataNascimento);
 
   // --- Salvar dados gerais ---
   async function handleSaveDados(e: React.FormEvent) {
@@ -155,8 +174,15 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
             )}
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Idade</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Idade (no evento)</p>
             <p className="text-gray-900">{idade} anos</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Faixa etária</p>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+              {faixaEtaria}
+            </span>
+            <p className="text-xs text-gray-400 mt-1">Calculada com base na idade em 27/09/2026</p>
           </div>
         </div>
       </div>

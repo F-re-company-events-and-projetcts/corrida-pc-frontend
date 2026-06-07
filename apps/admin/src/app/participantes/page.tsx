@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import { CheckinToggle } from "@/components/CheckinToggle";
+import { faixaEtaria } from "@/lib/faixaEtaria";
 
 interface CategoriaInfo {
   nome: string;
@@ -21,6 +22,8 @@ interface Participante {
   nome: string;
   email: string;
   telefone: string;
+  dataNascimento: string;
+  cpf: string | null;
   tamanhoCamiseta: string;
   numeroPeito: number | null;
   checkinRealizadoEm: string | null;
@@ -245,11 +248,12 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Nome</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Nascimento / FX</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">E-mail</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Categoria</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Pedido</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Camiseta</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Nº Peito</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Camis.</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Peito</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Check-in</th>
                   </tr>
                 </thead>
@@ -260,6 +264,12 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
                         <a href={`/participantes/${p.id}`} className="hover:text-blue-600 hover:underline transition-colors">
                           {p.nome}
                         </a>
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <p className="text-sm text-gray-600">{p.dataNascimento}</p>
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                          {faixaEtaria(p.dataNascimento)}
+                        </span>
                       </td>
                       <td className="px-6 py-3.5 text-gray-600 text-sm">{p.email}</td>
                       <td className="px-6 py-3.5 whitespace-nowrap">

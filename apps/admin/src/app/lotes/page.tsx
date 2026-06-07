@@ -16,6 +16,10 @@ function toDateInputValue(iso: string) {
   return iso.slice(0, 10);
 }
 
+const novoLoteVazio = () => ({
+  nome: "", precoCidadao: "" as unknown as number, dataInicio: "", dataFim: "", ativo: false,
+});
+
 export default function LotesPage() {
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +27,9 @@ export default function LotesPage() {
   const [editValues, setEditValues] = useState<Partial<Lote>>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ id: string; kind: "ok" | "err"; text: string } | null>(null);
+  const [criando, setCriando] = useState(false);
+  const [novoLote, setNovoLote] = useState(novoLoteVazio());
+  const [msgNovo, setMsgNovo] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/lotes")
@@ -30,6 +37,39 @@ export default function LotesPage() {
       .then((data: Lote[]) => { setLotes(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  async function handleCriarLote(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setMsgNovo(null);
+    try {
+      const body = {
+        nome: novoLote.nome,
+        precoCidadao: parseFloat(novoLote.precoCidadao as unknown as string),
+        dataInicio: new Date(novoLote.dataInicio).toISOString(),
+        dataFim: new Date(novoLote.dataFim).toISOString(),
+        ativo: novoLote.ativo,
+      };
+      const res = await fetch("/api/lotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json() as Lote & { error?: string };
+      if (res.ok) {
+        setLotes((prev) => [...prev, data].sort((a, b) => a.dataInicio.localeCompare(b.dataInicio)));
+        setCriando(false);
+        setNovoLote(novoLoteVazio());
+        setMsgNovo({ kind: "ok", text: "Lote criado com sucesso." });
+      } else {
+        setMsgNovo({ kind: "err", text: data.error ?? "Erro ao criar lote." });
+      }
+    } catch {
+      setMsgNovo({ kind: "err", text: "Falha de rede." });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function startEdit(lote: Lote) {
     setEditingId(lote.id);
@@ -100,13 +140,69 @@ export default function LotesPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
 
-        <div>
-          <div className="flex items-baseline gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">Gestão de Lotes</h2>
-            <span className="text-sm text-gray-400">Apenas um lote pode estar ativo por vez.</span>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-2xl font-bold text-gray-900">Gestão de Lotes</h2>
+              <span className="text-sm text-gray-400">Apenas um lote pode estar ativo por vez.</span>
+            </div>
+            <p className="text-xs font-medium text-gray-500 mt-1">Preço policial é configurado em Configurações.</p>
           </div>
-          <p className="text-xs font-medium text-gray-500 mt-1">Preço policial é sempre R$ 80,00 fixo, independente do lote.</p>
+          {!criando && (
+            <button
+              onClick={() => setCriando(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              + Novo lote
+            </button>
+          )}
         </div>
+
+        {/* Mensagem de criação */}
+        {msgNovo && (
+          <div className={`px-4 py-3 rounded-lg text-sm ${msgNovo.kind === "ok" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+            {msgNovo.text}
+          </div>
+        )}
+
+        {/* Formulário de novo lote */}
+        {criando && (
+          <form onSubmit={handleCriarLote} className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-blue-400 shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">Novo lote</p>
+              <button type="button" onClick={() => { setCriando(false); setNovoLote(novoLoteVazio()); }} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Nome do lote</label>
+                <input type="text" value={novoLote.nome} onChange={(e) => setNovoLote({ ...novoLote, nome: e.target.value })} placeholder="Ex: 3º Lote" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Preço cidadão (R$)</label>
+                <input type="number" step="0.01" min="0" value={novoLote.precoCidadao} onChange={(e) => setNovoLote({ ...novoLote, precoCidadao: e.target.value as unknown as number })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div className="flex items-end gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={novoLote.ativo} onChange={(e) => setNovoLote({ ...novoLote, ativo: e.target.checked })} className="w-4 h-4 accent-emerald-600" />
+                  <span className="text-sm text-gray-700">Ativar ao criar</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Início</label>
+                <input type="date" value={novoLote.dataInicio} onChange={(e) => setNovoLote({ ...novoLote, dataInicio: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Fim</label>
+                <input type="date" value={novoLote.dataFim} onChange={(e) => setNovoLote({ ...novoLote, dataFim: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="submit" disabled={saving} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                {saving ? "Criando…" : "Criar lote"}
+              </button>
+            </div>
+          </form>
+        )}
 
         {loading ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center text-sm text-gray-400">
