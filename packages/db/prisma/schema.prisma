@@ -30,6 +30,8 @@ model Lote {
 
 model Pedido {
   id              String          @id @default(cuid())
+  numeroPedidoSeq Int             @unique @default(autoincrement())
+  numeroPedido    String          @unique @default(dbgenerated())
   total           Float
   status          StatusPedido    @default(AGUARDANDO_PAGAMENTO)
   metodoPagamento MetodoPagamento

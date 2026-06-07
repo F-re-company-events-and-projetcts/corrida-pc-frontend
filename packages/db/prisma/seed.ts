@@ -59,27 +59,27 @@ async function main() {
   // Lotes
   await prisma.lote.upsert({
     where: { id: "lote-1" },
-    update: {},
+    update: { precoCidadao: 85.0, dataFim: new Date("2026-07-31T23:59:59Z") },
     create: {
       id: "lote-1",
       nome: "1º Lote",
-      precoCidadao: 80.0,
+      precoCidadao: 85.0,
       ativo: true,
       dataInicio: new Date("2026-01-01T00:00:00Z"),
-      dataFim: new Date("2026-06-30T23:59:59Z"),
+      dataFim: new Date("2026-07-31T23:59:59Z"),
     },
   });
 
   await prisma.lote.upsert({
     where: { id: "lote-2" },
-    update: {},
+    update: { precoCidadao: 90.0 },
     create: {
       id: "lote-2",
       nome: "2º Lote",
-      precoCidadao: 85.0,
+      precoCidadao: 90.0,
       ativo: false,
-      dataInicio: new Date("2026-07-01T00:00:00Z"),
-      dataFim: new Date("2026-08-31T23:59:59Z"),
+      dataInicio: new Date("2026-08-01T00:00:00Z"),
+      dataFim: new Date("2026-09-20T23:59:59Z"),
     },
   });
 
