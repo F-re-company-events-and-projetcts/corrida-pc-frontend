@@ -33,7 +33,7 @@ export const Footer = () => {
                         <h4 className="font-bold text-accent mb-6 tracking-wide">LINKS RÁPIDOS</h4>
                         <ul className="space-y-3 text-sm text-gray-300">
                             <li>
-                                <a href="#" className="hover:text-white hover:translate-x-1 transition-all inline-block">Regulamento Oficial</a>
+                                <a href="https://drive.google.com/drive/folders/1T3syuXmTeNV9qj9LyW6NdIXWWdOBiS0M" target="_blank" rel="noopener noreferrer" className="hover:text-white hover:translate-x-1 transition-all inline-block">Regulamento Oficial</a>
                             </li>
                             <li>
                                 <a href="/consultar-inscricao" className="hover:text-white hover:translate-x-1 transition-all inline-block">Consultar inscrição</a>

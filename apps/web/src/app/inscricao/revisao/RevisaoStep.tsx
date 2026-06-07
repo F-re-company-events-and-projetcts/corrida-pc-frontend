@@ -120,7 +120,7 @@ export function RevisaoStep({ categorias }: Props) {
           <label htmlFor="regulamento" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
             Li e aceito o{' '}
             <a
-              href="#regulamento"
+              href="https://drive.google.com/drive/folders/1T3syuXmTeNV9qj9LyW6NdIXWWdOBiS0M"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary underline"
