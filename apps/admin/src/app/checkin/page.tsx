@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { AdminNav } from "@/components/AdminNav";
 
 interface PreviewData {
   nome: string;
   numeroPeito: number;
   tamanhoCamiseta: string;
   checkinRealizadoEm: string | null;
-  categoria: { nome: string; percursoKm: number };
+  categoria: { nome: string; percursoKm: number; tipo: string };
   pedidoStatus: string;
 }
 
@@ -115,30 +116,7 @@ export default function CheckinPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            Corrida do Policial Civil — Admin
-          </h1>
-          <nav className="flex items-center gap-6 text-sm">
-            <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Dashboard
-            </a>
-            <a href="/participantes" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Participantes
-            </a>
-            <a href="/checkin" className="font-semibold text-gray-900" aria-current="page">
-              Check-in
-            </a>
-            <a href="/importar" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Importar números
-            </a>
-            <a href="/logout" className="text-gray-500 hover:text-red-600 transition-colors">
-              Sair
-            </a>
-          </nav>
-        </div>
-      </header>
+      <AdminNav active="/checkin" />
 
       <main className="max-w-4xl mx-auto px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Check-in presencial</h2>
@@ -239,6 +217,15 @@ export default function CheckinPage() {
                 )}
               </div>
             </div>
+
+            {state.data.categoria.tipo === "POLICIAL" && (
+              <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span><strong>Categoria Policial</strong> — validar comprovante de vínculo funcional presencialmente antes de confirmar.</span>
+              </div>
+            )}
 
             <div className="flex gap-3">
               {state.data.pedidoStatus === "PAGO" && !state.data.checkinRealizadoEm ? (

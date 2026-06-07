@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { AdminNav } from "@/components/AdminNav";
+import { CheckinToggle } from "@/components/CheckinToggle";
 
 interface CategoriaInfo {
   nome: string;
@@ -145,46 +147,7 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            Corrida do Policial Civil — Admin
-          </h1>
-          <nav className="flex items-center gap-6 text-sm">
-            <a
-              href="/dashboard"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/participantes"
-              className="font-semibold text-gray-900"
-              aria-current="page"
-            >
-              Participantes
-            </a>
-            <a
-              href="/checkin"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Check-in
-            </a>
-            <a
-              href="/importar"
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Importar números
-            </a>
-            <a
-              href="/logout"
-              className="text-gray-500 hover:text-red-600 transition-colors"
-            >
-              Sair
-            </a>
-          </nav>
-        </div>
-      </header>
+      <AdminNav active="/participantes" />
 
       <main className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -267,7 +230,11 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
                       key={p.id}
                       className={idx < data.participantes.length - 1 ? "border-b border-gray-100" : ""}
                     >
-                      <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{p.nome}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                        <a href={`/participantes/${p.id}`} className="hover:text-blue-600 hover:underline transition-colors">
+                          {p.nome}
+                        </a>
+                      </td>
                       <td className="px-6 py-4 text-gray-600">{p.email}</td>
                       <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
                         {p.categoria.nome}
@@ -286,15 +253,23 @@ export default async function ParticipantesPage({ searchParams }: PageProps) {
                       <td className="px-6 py-4 text-gray-600">
                         {p.numeroPeito ?? "—"}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
-                        {p.checkinRealizadoEm
-                          ? new Date(p.checkinRealizadoEm).toLocaleString("pt-BR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "—"}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <CheckinToggle
+                            participanteId={p.id}
+                            checkinRealizadoEm={p.checkinRealizadoEm}
+                          />
+                          {p.checkinRealizadoEm && (
+                            <span className="text-xs text-gray-400">
+                              {new Date(p.checkinRealizadoEm).toLocaleString("pt-BR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

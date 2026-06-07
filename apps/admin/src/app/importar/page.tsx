@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
+import { AdminNav } from "@/components/AdminNav";
 
 interface ErroLinha {
   linha: number;
@@ -118,41 +119,9 @@ export default function ImportarPage() {
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  const navLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/participantes", label: "Participantes" },
-    { href: "/checkin", label: "Check-in" },
-    { href: "/importar", label: "Importar números" },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            Corrida do Policial Civil — Admin
-          </h1>
-          <nav className="flex items-center gap-6 text-sm">
-            {navLinks.map(({ href, label }) => (
-              <a
-                key={href}
-                href={href}
-                className={
-                  href === "/importar"
-                    ? "font-semibold text-gray-900"
-                    : "text-gray-600 hover:text-gray-900 transition-colors"
-                }
-                aria-current={href === "/importar" ? "page" : undefined}
-              >
-                {label}
-              </a>
-            ))}
-            <a href="/logout" className="text-gray-500 hover:text-red-600 transition-colors">
-              Sair
-            </a>
-          </nav>
-        </div>
-      </header>
+      <AdminNav active="/importar" />
 
       <main className="max-w-4xl mx-auto px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Importar números de peito</h2>
