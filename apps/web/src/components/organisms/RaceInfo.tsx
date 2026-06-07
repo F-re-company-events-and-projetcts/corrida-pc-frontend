@@ -1,4 +1,4 @@
-import { User, Calendar, MapPin, Award, Clock } from "lucide-react";
+import { User, Calendar, MapPin, Award } from "lucide-react";
 import { Typography } from "@/components/atoms/typography";
 
 export const RaceInfo = () => {
@@ -126,4 +126,3 @@ export const RaceInfo = () => {
         </section>
     );
 };
-

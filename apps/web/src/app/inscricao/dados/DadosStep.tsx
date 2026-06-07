@@ -16,10 +16,26 @@ import { cn } from '@/lib/utils'
 
 const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XGG'] as const
 
+function calcularIdade(dateStr: string): number {
+  const birth = new Date(dateStr + 'T12:00:00')
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  if (
+    today.getMonth() < birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
+  ) age--
+  return age
+}
+
 const InscritoFormSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   cpf: z.string().refine(validarCPF, { message: 'CPF inválido' }),
-  dataNascimento: z.string().min(1, 'Data de nascimento é obrigatória'),
+  dataNascimento: z
+    .string()
+    .min(1, 'Data de nascimento é obrigatória')
+    .refine((val) => !val || calcularIdade(val) >= 15, {
+      message: 'Participante deve ter no mínimo 15 anos',
+    }),
   telefone: z
     .string()
     .min(10, 'Telefone deve ter no mínimo 10 dígitos')
@@ -81,6 +97,7 @@ export function DadosStep({ categorias }: Props) {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isValid },
   } = useForm<DadosFormValues>({
     resolver: zodResolver(DadosFormSchema),
@@ -218,6 +235,19 @@ export function DadosStep({ categorias }: Props) {
               {fieldErrors?.dataNascimento && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.dataNascimento.message}</p>
               )}
+              {(() => {
+                const val = watch(`inscritos.${idx}.dataNascimento`)
+                if (!val || fieldErrors?.dataNascimento) return null
+                const age = calcularIdade(val)
+                if (age >= 15 && age < 18) {
+                  return (
+                    <p className="mt-1 text-sm text-amber-600">
+                      Participante menor de 18 anos — a autorização do responsável legal será exigida no check-in.
+                    </p>
+                  )
+                }
+                return null
+              })()}
             </div>
 
             {/* Telefone */}

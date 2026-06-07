@@ -12,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 interface PixData {
   pedidoId: string
+  numeroPedido: string
   qrCode: string
   qrCodeBase64: string
   expiresAt: string
@@ -19,6 +20,7 @@ interface PixData {
 
 interface CartaoData {
   pedidoId: string
+  numeroPedido: string
   total: number
 }
 
@@ -29,17 +31,18 @@ type PageState =
   | { kind: 'expired' }
   | { kind: 'error'; message: string }
 
+function getSecondsLeft(expiresAt: string | null) {
+  if (!expiresAt) return 0
+  return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
+}
+
 function useCountdown(expiresAt: string | null) {
-  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
-    if (!expiresAt) return 0
-    return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
-  })
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => getSecondsLeft(expiresAt))
 
   useEffect(() => {
     if (!expiresAt) return
     const tick = () => {
-      const remaining = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
-      setSecondsLeft(remaining)
+      setSecondsLeft(getSecondsLeft(expiresAt))
     }
     tick()
     const id = setInterval(tick, 1000)
@@ -58,8 +61,11 @@ export default function PagamentoPage() {
   const { inscricoes, metodoPagamento, setPedidoId } = useInscricao()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [copied, setCopied] = useState(false)
+  const [simulatingPayment, setSimulatingPayment] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const expiredRef = useRef(false)
+  const createPedidoStartedRef = useRef(false)
+  const activeRef = useRef(false)
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -88,15 +94,18 @@ export default function PagamentoPage() {
         // ignore transient network errors — polling will retry
       }
     }, 3000)
-  }, [router, stopPolling])
+  }, [router, setPedidoId, stopPolling])
 
   useEffect(() => {
+    activeRef.current = true
+
     if (inscricoes.length === 0 || metodoPagamento === null) {
       router.replace('/inscricao')
-      return
+      return () => {
+        activeRef.current = false
+        stopPolling()
+      }
     }
-
-    let cancelled = false
 
     async function criarPedido() {
       try {
@@ -106,17 +115,18 @@ export default function PagamentoPage() {
           body: JSON.stringify({ inscricoes, metodoPagamento }),
         })
 
-        if (cancelled) return
+        if (!activeRef.current) return
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({})) as { error?: string }
+          if (!activeRef.current) return
           setState({ kind: 'error', message: body.error ?? 'Erro ao iniciar pagamento.' })
           return
         }
 
         const data = await res.json() as PixData | CartaoData
 
-        if (cancelled) return
+        if (!activeRef.current) return
 
         if (metodoPagamento === 'CARTAO') {
           setState({ kind: 'card', data: data as CartaoData })
@@ -127,31 +137,35 @@ export default function PagamentoPage() {
           startPolling(pixData.pedidoId)
         }
       } catch {
-        if (!cancelled) {
-          setState({ kind: 'error', message: 'Erro de conexão. Tente novamente.' })
-        }
+        if (!activeRef.current) return
+        setState({ kind: 'error', message: 'Erro de conexão. Tente novamente.' })
       }
     }
 
-    criarPedido()
+    if (!createPedidoStartedRef.current) {
+      createPedidoStartedRef.current = true
+      criarPedido()
+    }
 
     return () => {
-      cancelled = true
+      activeRef.current = false
       stopPolling()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [inscricoes, metodoPagamento, router, setPedidoId, startPolling, stopPolling])
 
   const expiresAt = state.kind === 'pix' ? state.data.expiresAt : null
   const { secondsLeft, formatted } = useCountdown(expiresAt)
 
   useEffect(() => {
-    if (state.kind === 'pix' && secondsLeft === 0 && !expiredRef.current) {
-      expiredRef.current = true
-      stopPolling()
-      setState({ kind: 'expired' })
-    }
-  }, [secondsLeft, state.kind, stopPolling])
+    if (!expiresAt || secondsLeft !== 0 || expiredRef.current) return
+
+    const expiresAtMs = new Date(expiresAt).getTime()
+    if (Number.isNaN(expiresAtMs) || expiresAtMs > Date.now()) return
+
+    expiredRef.current = true
+    stopPolling()
+    queueMicrotask(() => setState({ kind: 'expired' }))
+  }, [expiresAt, secondsLeft, stopPolling])
 
   async function copiarCodigo() {
     if (state.kind !== 'pix') return
@@ -161,6 +175,32 @@ export default function PagamentoPage() {
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // fallback: select the text manually — not critical
+    }
+  }
+
+  async function simularPagamentoAprovado() {
+    if (state.kind !== 'pix' || simulatingPayment) return
+
+    setSimulatingPayment(true)
+    try {
+      const res = await fetch(`${API_URL}/api/v1/dev/aprovar-pix/${state.data.pedidoId}`, {
+        method: 'POST',
+        headers: { 'x-dev-payment-secret': 'dev-local' },
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        setState({ kind: 'error', message: body.error ?? 'Erro ao simular pagamento.' })
+        return
+      }
+
+      stopPolling()
+      setPedidoId(state.data.pedidoId)
+      router.push('/inscricao/confirmacao')
+    } catch {
+      setState({ kind: 'error', message: 'Erro ao simular pagamento.' })
+    } finally {
+      setSimulatingPayment(false)
     }
   }
 
@@ -223,6 +263,7 @@ export default function PagamentoPage() {
     return (
       <CardPaymentStep
         pedidoId={state.data.pedidoId}
+        numeroPedido={state.data.numeroPedido}
         total={state.data.total}
       />
     )
@@ -303,6 +344,24 @@ export default function PagamentoPage() {
           Após o pagamento ser confirmado você será redirecionado automaticamente. Não feche esta página.
         </Typography>
       </div>
+
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <Typography variant="label" as="p" className="text-xs text-amber-700 uppercase tracking-wide">
+            Desenvolvimento
+          </Typography>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2 border-amber-300 bg-white text-amber-800 hover:bg-amber-100"
+            onClick={simularPagamentoAprovado}
+            disabled={simulatingPayment}
+          >
+            {simulatingPayment && <Loader2 className="w-4 h-4 animate-spin" />}
+            Simular pagamento aprovado
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

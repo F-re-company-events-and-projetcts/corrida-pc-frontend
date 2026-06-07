@@ -12,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 interface PedidoConfirmado {
   id: string
+  numeroPedido: string
   total: number
   updatedAt: string
   participantes: { id: string; nome: string; categoria: string }[]
@@ -117,7 +118,7 @@ export default function ConfirmacaoPage() {
             Número do pedido
           </Typography>
           <Typography variant="p" className="font-mono text-sm text-gray-800">
-            {data.id}
+            {data.numeroPedido}
           </Typography>
         </div>
 
@@ -167,9 +168,9 @@ export default function ConfirmacaoPage() {
         </div>
       </div>
 
-      <Link href={`/pedido/${data.id}`} className="block">
+      <Link href={`/consultar-inscricao?numeroPedido=${encodeURIComponent(data.numeroPedido)}`} className="block">
         <Button variant="outline" className="w-full">
-          Ver status do pedido
+          Consultar inscrição
         </Button>
       </Link>
 

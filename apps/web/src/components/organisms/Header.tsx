@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/atoms/button";
 import { cn } from "@/lib/utils";
-import { Shield, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,6 +24,7 @@ export const Header = () => {
         { name: "Em Breve", href: "#", disabled: true, onClick: () => alert("Detalhes serão divulgados em breve") },
         { name: "Entrega de Kit", href: "#corrida-info" },
         { name: "Galeria 2025", href: "#galeria-fotos" },
+        { name: "Consultar Inscrição", href: "/consultar-inscricao" },
         { name: "Corredores", href: "#", onClick: handleCorredoresClick },
     ];
 

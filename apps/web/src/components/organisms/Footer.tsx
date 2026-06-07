@@ -32,11 +32,18 @@ export const Footer = () => {
                     <div>
                         <h4 className="font-bold text-accent mb-6 tracking-wide">LINKS RÁPIDOS</h4>
                         <ul className="space-y-3 text-sm text-gray-300">
-                            {['Regulamento Oficial',  'Fale Conosco', 'Venda de Fotos 2025'].map(link => (
-                                <li key={link}>
-                                    <a href="#" className="hover:text-white hover:translate-x-1 transition-all inline-block">{link}</a>
-                                </li>
-                            ))}
+                            <li>
+                                <a href="#" className="hover:text-white hover:translate-x-1 transition-all inline-block">Regulamento Oficial</a>
+                            </li>
+                            <li>
+                                <a href="/consultar-inscricao" className="hover:text-white hover:translate-x-1 transition-all inline-block">Consultar inscrição</a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white hover:translate-x-1 transition-all inline-block">Fale Conosco</a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white hover:translate-x-1 transition-all inline-block">Venda de Fotos 2025</a>
+                            </li>
                         </ul>
                     </div>
 

@@ -19,6 +19,8 @@ export function RevisaoStep({ categorias }: Props) {
   const { inscricoes, metodoPagamento, setMetodoPagamento } = useInscricao()
 
   const [aceitaRegulamento, setAceitaRegulamento] = useState(false)
+  const [aceitaLGPD, setAceitaLGPD] = useState(false)
+  const [aceitaReembolso, setAceitaReembolso] = useState(false)
   const [declaraPolicial, setDeclaraPolicial] = useState(false)
 
   const categoriaMap = Object.fromEntries(categorias.map((c) => [c.id, c]))
@@ -31,7 +33,7 @@ export function RevisaoStep({ categorias }: Props) {
   }, 0)
 
   const podeAvancar =
-    aceitaRegulamento && (!temPolicial || declaraPolicial) && metodoPagamento !== null
+    aceitaRegulamento && aceitaLGPD && aceitaReembolso && (!temPolicial || declaraPolicial) && metodoPagamento !== null
 
   return (
     <div className="space-y-8">
@@ -126,6 +128,36 @@ export function RevisaoStep({ categorias }: Props) {
               regulamento
             </a>{' '}
             da 2ª Corrida do Policial Civil.
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="lgpd"
+            checked={aceitaLGPD}
+            onCheckedChange={(v) => setAceitaLGPD(v === true)}
+          />
+          <label htmlFor="lgpd" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
+            Declaro que li e aceito a{' '}
+            <a href="#privacidade" className="text-primary underline">
+              Política de Privacidade
+            </a>{' '}
+            e autorizo o tratamento dos meus dados pessoais para fins de inscrição, conforme a LGPD (Lei 13.709/2018).
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="reembolso"
+            checked={aceitaReembolso}
+            onCheckedChange={(v) => setAceitaReembolso(v === true)}
+          />
+          <label htmlFor="reembolso" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
+            Estou ciente da{' '}
+            <a href="#reembolso" className="text-primary underline">
+              política de reembolso
+            </a>
+            : não há reembolso após a confirmação do pagamento, exceto em caso de cancelamento do evento pela organização.
           </label>
         </div>
 

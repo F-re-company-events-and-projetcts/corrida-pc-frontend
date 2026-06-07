@@ -70,10 +70,11 @@ type SubmitState =
 
 interface CardPaymentStepProps {
   pedidoId: string
+  numeroPedido: string
   total: number
 }
 
-export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
+export function CardPaymentStep({ pedidoId, numeroPedido, total }: CardPaymentStepProps) {
   const router = useRouter()
   const { inscricoes, setPedidoId } = useInscricao()
 
@@ -95,7 +96,7 @@ export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
     if (typeof window === 'undefined') return
 
     if (typeof window.MercadoPago !== 'undefined') {
-      setSdkState('ready')
+      queueMicrotask(() => setSdkState('ready'))
       return
     }
 
@@ -211,7 +212,7 @@ export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
       }
       cardFormRef.current = null
     }
-  }, [sdkState, pedidoId, total, router])
+  }, [sdkState, pedidoId, total, router, setPedidoId])
 
   // ─── Error state: SDK failed to load ────────────────────────────────────────
   if (sdkState === 'error') {
@@ -242,7 +243,7 @@ export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
           Pagamento com Cartão
         </Typography>
         <Typography variant="p" className="text-gray-500">
-          Preencha os dados do cartão. Suas informações são protegidas pelo Mercado Pago.
+          Pedido {numeroPedido}. Preencha os dados do cartão. Suas informações são protegidas pelo Mercado Pago.
         </Typography>
       </div>
 
@@ -280,26 +281,39 @@ export function CardPaymentStep({ pedidoId, total }: CardPaymentStepProps) {
               className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
             />
           </div>
-          <div
+          <input
             id="form-checkout__cardholderName"
-            className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
+            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
+            aria-label="Nome no cartão"
+            placeholder="Nome no cartão"
           />
-          <div
+          <select
             id="form-checkout__issuer"
-            className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
-          />
-          <div
+            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
+            aria-label="Banco emissor"
+          >
+            <option value="">Banco emissor</option>
+          </select>
+          <select
             id="form-checkout__installments"
-            className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
-          />
+            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
+            aria-label="Parcelas"
+          >
+            <option value="">Parcelas</option>
+          </select>
           <div className="grid grid-cols-2 gap-3">
-            <div
+            <select
               id="form-checkout__identificationType"
-              className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
-            />
-            <div
+              className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
+              aria-label="Tipo de documento"
+            >
+              <option value="">Tipo</option>
+            </select>
+            <input
               id="form-checkout__identificationNumber"
-              className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
+              className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
+              aria-label="CPF"
+              placeholder="CPF"
             />
           </div>
         </div>

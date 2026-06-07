@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { CheckCircle, AlertCircle, Clock, Calendar, MapPin } from 'lucide-react'
 import { Typography } from '@/components/atoms/typography'
 import { Button } from '@/components/atoms/button'
+import { PublicPageHeader } from '@/components/organisms/PublicPageHeader'
+import { Footer } from '@/components/organisms/Footer'
 import { PedidoCountdown } from './PedidoCountdown'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
@@ -10,11 +12,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 interface Participante {
   id: string
   nome: string
+  numeroPeito: number | null
   categoria: string
 }
 
 interface PedidoData {
   id: string
+  numeroPedido: string
   status: 'AGUARDANDO_PAGAMENTO' | 'PAGO' | 'EXPIRADO' | 'RECUSADO' | 'CANCELADO'
   expiresAt: string | null
   metodoPagamento: 'PIX' | 'CARTAO'
@@ -63,7 +67,9 @@ export default async function PedidoStatusPage({
     pedido.status === 'AGUARDANDO_PAGAMENTO' && isPix && pedido.expiresAt !== null
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <PublicPageHeader />
+      <main className="flex-1 py-10 px-4">
       <div className="max-w-lg mx-auto space-y-8">
 
         {/* Header */}
@@ -75,8 +81,16 @@ export default async function PedidoStatusPage({
             <AlertCircle className="w-16 h-16 text-red-500" />
           )}
 
-          <Typography variant="h2" as="h1">Status do Pedido</Typography>
-          <StatusBadge status={pedido.status} />
+          <Typography variant="h2" as="h1">
+            {pedido.status === 'PAGO'
+              ? 'Inscrição confirmada!'
+              : pedido.status === 'AGUARDANDO_PAGAMENTO'
+              ? 'Aguardando pagamento'
+              : pedido.status === 'EXPIRADO'
+              ? 'Pedido expirado'
+              : 'Status do Pedido'}
+          </Typography>
+          {pedido.status !== 'PAGO' && <StatusBadge status={pedido.status} />}
         </div>
 
         {/* Pedido details */}
@@ -86,7 +100,7 @@ export default async function PedidoStatusPage({
               Número do pedido
             </Typography>
             <Typography variant="p" className="font-mono text-sm text-gray-800">
-              {pedido.id}
+              {pedido.numeroPedido}
             </Typography>
           </div>
 
@@ -109,11 +123,18 @@ export default async function PedidoStatusPage({
             </Typography>
             <ul className="space-y-2">
               {pedido.participantes.map((p) => (
-                <li key={p.id} className="flex items-center justify-between">
+                <li key={p.id} className="flex items-center justify-between gap-2">
                   <Typography variant="p" className="text-sm text-gray-800">{p.nome}</Typography>
-                  <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
-                    {p.categoria}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {pedido.status === 'PAGO' && p.numeroPeito != null && (
+                      <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-mono">
+                        #{p.numeroPeito}
+                      </span>
+                    )}
+                    <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                      {p.categoria}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -170,6 +191,8 @@ export default async function PedidoStatusPage({
           <Button variant="outline" className="w-full">Voltar ao início</Button>
         </Link>
       </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   )
 }
