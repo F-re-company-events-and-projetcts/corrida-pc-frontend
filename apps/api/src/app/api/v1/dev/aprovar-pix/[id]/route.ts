@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@corrida/db";
+import { prisma, Prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
 import { sendConfirmacaoEmail } from "@corrida/email";
 import { z } from "zod";
@@ -104,7 +104,7 @@ export async function POST(
     {}
   );
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const [idx, inscricao] of inscricoes.entries()) {
       await tx.participante.create({
         data: {
@@ -161,7 +161,7 @@ export async function POST(
           numeroPedido: pedido.numeroPedido,
           email: destinatario,
           total: pedido.total,
-          participantes: participantes.map((p) => ({
+          participantes: participantes.map((p: (typeof participantes)[number]) => ({
             nome: p.nome,
             categoria: p.categoria.nome,
             percursoKm: p.categoria.percursoKm,

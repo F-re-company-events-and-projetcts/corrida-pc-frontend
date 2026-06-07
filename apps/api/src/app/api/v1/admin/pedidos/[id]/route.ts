@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { prisma } from "@corrida/db";
+import { prisma, Prisma } from "@corrida/db";
 import { z } from "zod";
 
 function getToken(req: NextRequest): string | null {
@@ -74,7 +74,7 @@ export async function GET(
     expiresAt: pedido.expiresAt?.toISOString() ?? null,
     createdAt: pedido.createdAt.toISOString(),
     updatedAt: pedido.updatedAt.toISOString(),
-    participantes: pedido.participantes.map((p) => ({
+    participantes: pedido.participantes.map((p: (typeof pedido.participantes)[number]) => ({
       ...p,
       dataNascimento: p.dataNascimento.toISOString(),
       checkinRealizadoEm: p.checkinRealizadoEm?.toISOString() ?? null,
@@ -128,12 +128,12 @@ export async function PATCH(
 
   // Ao cancelar pedido PAGO, devolver vagas atomicamente
   if (pedido.status === "PAGO" && novoStatus === "CANCELADO") {
-    const countPerCategory = pedido.participantes.reduce<Record<string, number>>((acc, p) => {
+    const countPerCategory = pedido.participantes.reduce<Record<string, number>>((acc: Record<string, number>, p: { categoriaId: string }) => {
       acc[p.categoriaId] = (acc[p.categoriaId] ?? 0) + 1;
       return acc;
     }, {});
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.pedido.update({ where: { id }, data: { status: novoStatus } });
 
       for (const [categoriaId, count] of Object.entries(countPerCategory)) {

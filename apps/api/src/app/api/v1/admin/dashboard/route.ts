@@ -108,17 +108,22 @@ export async function GET(req: NextRequest) {
     vagasPorCategoria,
     porMetodoPagamento,
     checkinProgress: { total: checkinTotal, feitos: checkinFeitos },
-    camisetasPorTamanho: camisetasPorTamanho.map((c) => ({
+    camisetasPorTamanho: camisetasPorTamanho.map((c: { tamanhoCamiseta: string; _count: { _all: number } }) => ({
       tamanho: c.tamanhoCamiseta,
       count: c._count._all,
     })),
-    ultimasInscricoes: ultimasInscricoes.map((p) => ({
+    ultimasInscricoes: ultimasInscricoes.map((p: {
+      nome: string;
+      createdAt: Date;
+      categoria: { nome: string };
+      pedido: { metodoPagamento: string };
+    }) => ({
       nome: p.nome,
       categoria: p.categoria.nome,
       metodoPagamento: p.pedido.metodoPagamento,
       createdAt: p.createdAt.toISOString(),
     })),
-    inscricoesPorDia: inscricoesPorDiaRaw.map((r) => ({
+    inscricoesPorDia: inscricoesPorDiaRaw.map((r: { data: string; count: number }) => ({
       data: r.data,
       count: Number(r.count),
     })),

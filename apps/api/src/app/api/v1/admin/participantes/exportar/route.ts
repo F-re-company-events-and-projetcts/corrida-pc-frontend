@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
     take: 10000,
   });
 
-  const rows: ExportRow[] = participantes.map((p) => ({
+  const rows: ExportRow[] = participantes.map((p: (typeof participantes)[number]) => ({
     nome: p.nome,
     email: p.email,
     telefone: p.telefone,

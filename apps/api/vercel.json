@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/v1/cron/expirar-pix",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

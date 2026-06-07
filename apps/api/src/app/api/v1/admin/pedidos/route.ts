@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json({
-    pedidos: pedidos.map((p) => ({
+    pedidos: pedidos.map((p: (typeof pedidos)[number]) => ({
       ...p,
       createdAt: p.createdAt.toISOString(),
       participantesCount: p._count.participantes,

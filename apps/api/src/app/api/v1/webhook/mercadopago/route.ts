@@ -3,7 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import MercadoPago, { Payment } from "mercadopago";
 import { z } from "zod";
-import { prisma } from "@corrida/db";
+import { prisma, Prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
 import { sendConfirmacaoEmail } from "@corrida/email";
 
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const [idx, inscricao] of inscricoes.entries()) {
         await tx.participante.create({
           data: {
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
           numeroPedido: pedido.numeroPedido,
           email: destinatario,
           total: pedido.total,
-          participantes: participantes.map((p) => ({
+          participantes: participantes.map((p: (typeof participantes)[number]) => ({
             nome: p.nome,
             categoria: p.categoria.nome,
             percursoKm: p.categoria.percursoKm,

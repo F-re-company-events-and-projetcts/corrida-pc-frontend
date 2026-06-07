@@ -41,7 +41,7 @@ export async function GET(
     metodoPagamento: pedido.metodoPagamento,
     total: pedido.total,
     updatedAt: pedido.updatedAt.toISOString(),
-    participantes: pedido.participantes.map((p) => ({
+    participantes: pedido.participantes.map((p: (typeof pedido.participantes)[number]) => ({
       id: p.id,
       nome: p.nome,
       numeroPeito: p.numeroPeito,
