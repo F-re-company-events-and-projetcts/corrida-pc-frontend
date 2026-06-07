@@ -28,7 +28,7 @@ type PageState =
 
 const STATUS_LABELS: Record<ConsultaData['status'], string> = {
   AGUARDANDO_PAGAMENTO: 'Aguardando pagamento',
-  PAGO: 'Pago',
+  PAGO: 'Inscrição confirmada',
   EXPIRADO: 'Expirado',
   RECUSADO: 'Recusado',
   CANCELADO: 'Cancelado',
