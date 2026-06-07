@@ -48,6 +48,9 @@
 }
 
 :root {
+  --font-inter: Arial, Helvetica, sans-serif;
+  --font-montserrat: Arial, Helvetica, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --radius: 0.625rem;
   --background: #F2F2F2;
   --foreground: #1F2937;
