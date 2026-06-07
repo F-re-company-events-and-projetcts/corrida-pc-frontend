@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@corrida/db";
 import type { Categoria } from "@corrida/types";
+import { calcularPreco, getConfiguracoesPricing } from "@/lib/pricing";
 
 export async function GET() {
   const now = new Date();
 
-  const [categorias, loteAtivo] = await Promise.all([
+  const [categorias, loteAtivo, { precoPolicial, taxaPct }] = await Promise.all([
     prisma.categoria.findMany({ orderBy: { nome: "asc" } }),
     prisma.lote.findFirst({
       where: {
@@ -14,6 +15,7 @@ export async function GET() {
         dataFim: { gte: now },
       },
     }),
+    getConfiguracoesPricing(),
   ]);
 
   const data: Categoria[] = categorias.map((cat) => ({
@@ -24,13 +26,10 @@ export async function GET() {
     vagasTotal: cat.vagasTotal,
     vagasOcupadas: cat.vagasOcupadas,
     vagasDisponiveis: cat.vagasTotal - cat.vagasOcupadas,
-    precoAtual:
-      cat.tipo === "POLICIAL"
-        ? 80.0
-        : loteAtivo?.precoCidadao ?? null,
+    precoAtual: calcularPreco(cat.tipo, loteAtivo?.precoCidadao ?? null, precoPolicial, taxaPct),
   }));
 
   return NextResponse.json(data, {
-    headers: { "Cache-Control": "public, max-age=30" },
+    headers: { "Cache-Control": "public, max-age=5" },
   });
 }

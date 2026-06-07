@@ -35,41 +35,14 @@ function extrairLinhas(rows: Record<string, unknown>[]): { linhas: LinhaInput[];
   let colCpf: string | null = null;
   let colNumero: string | null = null;
 
-  const cpfVariants = ["cpf"];
-
   for (const col of colunas) {
     const norm = normalizarNomeColuna(col);
-    if (cpfVariants.includes(norm)) colCpf = col;
-    if (
-      norm === "numerodepeito" ||
-      norm === "numeropito" ||
-      norm === "numeroperito" ||
-      norm === "numerodepito" ||
-      norm === "peito" ||
-      norm === "numeropeitol" ||
-      norm === "num" ||
-      norm === "npeito"
-    ) {
-      colNumero = col;
-    }
+    if (norm.includes("cpf")) colCpf = col;
+    if (norm.includes("peito") || norm.includes("numero") || norm === "num" || norm === "npeito") colNumero = col;
   }
 
-  // broader fallback matching
-  if (!colCpf) {
-    for (const col of colunas) {
-      const norm = normalizarNomeColuna(col);
-      if (norm.includes("cpf")) { colCpf = col; break; }
-    }
-  }
-  if (!colNumero) {
-    for (const col of colunas) {
-      const norm = normalizarNomeColuna(col);
-      if (norm.includes("peito") || norm.includes("numero") || norm.includes("num")) { colNumero = col; break; }
-    }
-  }
-
-  if (!colCpf) return { linhas: [], erro: `Coluna CPF não encontrada. Colunas disponíveis: ${colunas.join(", ")}` };
-  if (!colNumero) return { linhas: [], erro: `Coluna numeroPeito não encontrada. Colunas disponíveis: ${colunas.join(", ")}` };
+  if (!colCpf) return { linhas: [], erro: `Coluna CPF não encontrada. Colunas: ${colunas.join(", ")}` };
+  if (!colNumero) return { linhas: [], erro: `Coluna numeroPeito não encontrada. Colunas: ${colunas.join(", ")}` };
 
   const linhas: LinhaInput[] = [];
   for (const row of rows) {
@@ -112,9 +85,7 @@ async function parsePlanilha(buffer: Buffer, filename: string): Promise<{ rows: 
 
 export async function POST(req: NextRequest) {
   const token = getToken(req);
-  if (!token) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-  }
+  if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   try {
     const secret = new TextEncoder().encode(process.env.ADMIN_JWT_SECRET!);
@@ -138,24 +109,13 @@ export async function POST(req: NextRequest) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   const { rows, erro: erroParser } = await parsePlanilha(buffer, file.name);
-
-  if (erroParser) {
-    return NextResponse.json({ error: erroParser }, { status: 422 });
-  }
+  if (erroParser) return NextResponse.json({ error: erroParser }, { status: 422 });
 
   const { linhas, erro: erroExtracao } = extrairLinhas(rows);
+  if (erroExtracao) return NextResponse.json({ error: erroExtracao }, { status: 422 });
+  if (linhas.length > 1000) return NextResponse.json({ error: "Máximo de 1000 linhas por importação" }, { status: 422 });
 
-  if (erroExtracao) {
-    return NextResponse.json({ error: erroExtracao }, { status: 422 });
-  }
-
-  if (linhas.length > 1000) {
-    return NextResponse.json({ error: "Máximo de 1000 linhas por importação" }, { status: 422 });
-  }
-
-  const todos = await prisma.participante.findMany({
-    select: { id: true, cpf: true },
-  });
+  const todos = await prisma.participante.findMany({ select: { id: true, cpf: true } });
 
   let processados = 0;
   let atualizados = 0;
@@ -172,8 +132,7 @@ export async function POST(req: NextRequest) {
 
     let participanteId: string | null = null;
     for (const p of todos) {
-      const match = await bcrypt.compare(cpf, p.cpf);
-      if (match) {
+      if (await bcrypt.compare(cpf, p.cpf)) {
         participanteId = p.id;
         break;
       }
@@ -184,10 +143,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    await prisma.participante.update({
-      where: { id: participanteId },
-      data: { numeroPeito },
-    });
+    await prisma.participante.update({ where: { id: participanteId }, data: { numeroPeito } });
     atualizados++;
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@corrida/db";
 import { CriarPedidoSchema } from "@corrida/validations";
 import MercadoPago, { Payment } from "mercadopago";
+import { calcularPreco, getConfiguracoesPricing } from "@/lib/pricing";
 
 // ─── Rate limiting (in-memory) ────────────────────────────────────────────────
 
@@ -69,6 +70,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const { precoPolicial, taxaPct } = await getConfiguracoesPricing();
+
   if (!loteAtivo) {
     return NextResponse.json(
       { error: "Nenhum lote ativo no momento. Inscrições indisponíveis." },
@@ -117,10 +120,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Calculate order total
+  // Calculate order total (includes service fee from Configuracao table)
   const total = inscricoes.reduce((acc, inscricao) => {
     const cat = categoryMap.get(inscricao.categoriaId)!;
-    return acc + (cat.tipo === "POLICIAL" ? 80.0 : loteAtivo.precoCidadao);
+    const preco = calcularPreco(cat.tipo, loteAtivo.precoCidadao, precoPolicial, taxaPct) ?? 0;
+    return acc + preco;
   }, 0);
 
   // PIX expires in 30min; card payments don't need expiration

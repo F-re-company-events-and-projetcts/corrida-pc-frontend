@@ -27,10 +27,29 @@ export async function GET(req: NextRequest) {
   const categoriaId = searchParams.get("categoria") ?? "";
   const status = searchParams.get("status") ?? "";
   const q = searchParams.get("q") ?? "";
+  const faixaEtaria = searchParams.get("faixa") ?? "";
+
+  // Faixa etária: calcular intervalo de dataNascimento
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  const dia = hoje.getDate();
+
+  const faixaFilter: { gte?: Date; lte?: Date } | undefined = (() => {
+    switch (faixaEtaria) {
+      case "menor18": return { gte: new Date(ano - 17, mes, dia) };
+      case "18a29":   return { gt: new Date(ano - 30, mes, dia), lte: new Date(ano - 18, mes, dia) } as never;
+      case "30a39":   return { gt: new Date(ano - 40, mes, dia), lte: new Date(ano - 30, mes, dia) } as never;
+      case "40a49":   return { gt: new Date(ano - 50, mes, dia), lte: new Date(ano - 40, mes, dia) } as never;
+      case "50mais":  return { lte: new Date(ano - 50, mes, dia) };
+      default: return undefined;
+    }
+  })();
 
   const where = {
     ...(categoriaId ? { categoriaId } : {}),
     ...(status ? { pedido: { status: status as never } } : {}),
+    ...(faixaFilter ? { dataNascimento: faixaFilter } : {}),
     ...(q
       ? {
           OR: [
