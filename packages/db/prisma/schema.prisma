@@ -97,6 +97,12 @@ model AdminUser {
   logs      AdminLog[]
 }
 
+model Configuracao {
+  chave     String   @id
+  valor     String
+  updatedAt DateTime @updatedAt
+}
+
 model AdminLog {
   id            String    @id @default(cuid())
   adminId       String
