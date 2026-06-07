@@ -8,6 +8,7 @@
     "./client": "./src/client.ts"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
