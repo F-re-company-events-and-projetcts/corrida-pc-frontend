@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import type { Categoria } from '@corrida/types'
 import { useInscricao } from '@/contexts/InscricaoContext'
@@ -12,21 +12,20 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   categorias: Categoria[]
+  initialCategoriaId?: string
 }
 
-export function SelecionarCategoriaStep({ categorias }: Props) {
+export function SelecionarCategoriaStep({ categorias, initialCategoriaId }: Props) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { categoriaId, setCategoriaId } = useInscricao()
 
-  // Auto-selecionar categoria vinda da landing page via ?cat=ID
+  // Auto-selecionar categoria vinda da landing page via prop do server component
   useEffect(() => {
-    const catParam = searchParams.get('cat')
-    if (catParam && !categoriaId) {
-      const encontrada = categorias.find((c) => c.id === catParam && c.vagasDisponiveis > 0)
+    if (initialCategoriaId && !categoriaId) {
+      const encontrada = categorias.find((c) => c.id === initialCategoriaId && c.vagasDisponiveis > 0)
       if (encontrada) setCategoriaId(encontrada.id)
     }
-  }, [searchParams, categorias, categoriaId, setCategoriaId])
+  }, [initialCategoriaId, categorias, categoriaId, setCategoriaId])
 
   const selected = categorias.find((c) => c.id === categoriaId)
   const isPolicial = selected?.tipo === 'POLICIAL'
