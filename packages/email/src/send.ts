@@ -8,9 +8,29 @@ import {
 
 export interface SendConfirmacaoParams {
   pedidoId: string;
+  numeroPedido: string;
   participantes: ParticipanteInfo[];
   total: number;
   email: string;
+}
+
+function getEmailFrom() {
+  const from =
+    process.env.EMAIL_FROM?.trim() ??
+    "inscricoes@corridadopolicialcivil.com.br";
+
+  const plainEmailPattern = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+  const namedEmailPattern = /^.+\s<[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+>$/;
+
+  if (!plainEmailPattern.test(from) && !namedEmailPattern.test(from)) {
+    return {
+      ok: false as const,
+      error:
+        "EMAIL_FROM inválido. Use email@dominio.com ou Nome <email@dominio.com>.",
+    };
+  }
+
+  return { ok: true as const, from };
 }
 
 export async function sendConfirmacaoEmail(
@@ -24,29 +44,44 @@ export async function sendConfirmacaoEmail(
 
   try {
     const resend = new Resend(apiKey);
-    const from =
-      process.env.EMAIL_FROM ?? "inscricoes@corridadopolicialcivil.com.br";
+    const fromResult = getEmailFrom();
+    if (!fromResult.ok) {
+      console.error(`[email] ${fromResult.error}`);
+      return { ok: false, error: fromResult.error };
+    }
 
-    const firstName = params.participantes[0]?.nome.split(" ")[0] ?? "Inscrito";
-    const subject = `Inscrição confirmada — 2ª Corrida do Policial Civil • Pedido #${params.pedidoId.slice(0, 8).toUpperCase()}`;
+    const subject = `Inscrição confirmada — 2ª Corrida do Policial Civil • Pedido ${params.numeroPedido}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const consultaUrl = appUrl
+      ? `${appUrl.replace(/\/$/, "")}/consultar-inscricao?numeroPedido=${encodeURIComponent(params.numeroPedido)}`
+      : undefined;
 
     const html = await render(
       React.createElement(ConfirmacaoInscricao, {
-        pedidoId: params.pedidoId,
+        numeroPedido: params.numeroPedido,
         participantes: params.participantes,
         total: params.total,
+        consultaUrl,
       })
     );
 
-    await resend.emails.send({
-      from,
+    const result = await resend.emails.send({
+      from: fromResult.from,
       to: params.email,
       subject,
       html,
     });
 
+    if (result.error) {
+      console.error(
+        `[email] Failed to send confirmation for pedidoId=${params.pedidoId}:`,
+        result.error
+      );
+      return { ok: false, error: result.error };
+    }
+
     console.log(
-      `[email] Confirmation sent to ${params.email} for pedidoId=${params.pedidoId}`
+      `[email] Confirmation sent to ${params.email} for pedidoId=${params.pedidoId} emailId=${result.data?.id ?? "unknown"}`
     );
     return { ok: true };
   } catch (error) {

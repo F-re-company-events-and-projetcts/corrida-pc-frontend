@@ -6,6 +6,7 @@ import {
   Heading,
   Hr,
   Html,
+  Link,
   Preview,
   Section,
   Text,
@@ -18,15 +19,17 @@ export interface ParticipanteInfo {
 }
 
 export interface ConfirmacaoEmailProps {
-  pedidoId: string;
+  numeroPedido: string;
   participantes: ParticipanteInfo[];
   total: number;
+  consultaUrl?: string;
 }
 
 export function ConfirmacaoInscricao({
-  pedidoId,
+  numeroPedido,
   participantes,
   total,
+  consultaUrl,
 }: ConfirmacaoEmailProps) {
   const totalFormatado = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -36,7 +39,7 @@ export function ConfirmacaoInscricao({
   return (
     <Html lang="pt-BR">
       <Head />
-      <Preview>Inscrição confirmada! Pedido #{pedidoId.slice(0, 8).toUpperCase()}</Preview>
+      <Preview>Inscrição confirmada! Pedido {numeroPedido}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
           {/* Header */}
@@ -55,7 +58,7 @@ export function ConfirmacaoInscricao({
               Inscrição confirmada! ✓
             </Heading>
             <Text style={styles.text}>
-              Pedido <strong>#{pedidoId.slice(0, 8).toUpperCase()}</strong>
+              Pedido <strong>{numeroPedido}</strong>
             </Text>
           </Section>
 
@@ -100,6 +103,14 @@ export function ConfirmacaoInscricao({
             <Text style={styles.text}>
               Apresente este e-mail ou o número do pedido na retirada.
             </Text>
+            {consultaUrl ? (
+              <Text style={styles.text}>
+                Consulte o status da inscrição em{" "}
+                <Link href={consultaUrl} style={styles.link}>
+                  {consultaUrl}
+                </Link>
+              </Text>
+            ) : null}
           </Section>
 
           {/* Footer */}
@@ -167,6 +178,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "15px",
     lineHeight: "1.6",
     margin: "0 0 8px",
+  },
+  link: {
+    color: "#1e40af",
+    textDecoration: "underline",
   },
   participanteBox: {
     backgroundColor: "#f8fafc",
