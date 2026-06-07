@@ -35,7 +35,7 @@ Sistema de inscrições online para a 2ª Corrida do Policial Civil de Coxim-MS 
 │  │  apps/web    │      │  apps/admin                        │    │
 │  │  (Next.js)   │      │  (Next.js)                         │    │
 │  │  porta 3000  │      │  porta 3002                        │    │
-│  └──────┬───────┘      │  /api/proxy/[...path] ◄── proxy    │    │
+│  └──────┬───────┘      │  /api/checkin e /api/importar ◄ proxy │  │
 │         │              └──────────────┬─────────────────────┘    │
 └─────────┼────────────────────────────┼──────────────────────────┘
           │ fetch                      │ fetch (com Bearer token)
@@ -50,7 +50,7 @@ Sistema de inscrições online para a 2ª Corrida do Policial Civil de Coxim-MS 
 │  /api/v1/admin/auth            ◄─── login admin                  │
 │  /api/v1/admin/participantes   ◄─── listagem, filtros            │
 │  /api/v1/admin/checkin/[id]    ◄─── registrar check-in           │
-│  /api/v1/admin/importar        ◄─── vincula números de peito     │
+│  /api/v1/admin/importar-numeros ◄─── vincula números de peito    │
 │  /api/v1/cron/expirar-pix      ◄─── Vercel Cron (CRON_SECRET)    │
 └──────────────────────────┬──────────────────────────────────────┘
                            │ Prisma
@@ -65,15 +65,15 @@ Os três apps são projetos Next.js separados dentro de um monorepo pnpm + Turbo
 
 ### Padrão de Proxy httpOnly (admin → api)
 
-O painel admin usa um cookie `admin_token` httpOnly — inacessível ao JavaScript do browser. Isso significa que o browser não pode incluir o token diretamente em chamadas `fetch()` para `apps/api`. A solução é o proxy interno em `apps/admin/src/app/api/proxy/[...path]/route.ts`:
+O painel admin usa um cookie `admin_token` httpOnly — inacessível ao JavaScript do browser. Isso significa que o browser não pode incluir o token diretamente em chamadas `fetch()` para `apps/api`. Para ações client-side, o app admin possui proxies internos específicos em `apps/admin/src/app/api/checkin/*` e `apps/admin/src/app/api/importar/route.ts`:
 
 ```
-Browser → POST /api/proxy/admin/checkin/[id]
+Browser → POST /api/checkin
           ↓  (server-side do admin lê o cookie)
-          → POST apps/api/api/v1/admin/checkin/[id]  (com Authorization: Bearer token)
+          → POST apps/api/api/v1/admin/checkin  (com Authorization: Bearer token)
 ```
 
-O proxy roda no edge/server do admin, lê o cookie httpOnly e faz a chamada autenticada para `apps/api`. O browser nunca vê o JWT.
+Esses proxies rodam no server do admin, leem o cookie httpOnly e fazem chamadas autenticadas para `apps/api`. O browser nunca vê o JWT.
 
 ---
 
@@ -252,25 +252,26 @@ Step 5: Confirmação com número do pedido e instrução de retirada de kit
 
 ## Painel Admin
 
-O painel em `apps/admin` (porta 3002) está completamente implementado. Acesso protegido por JWT (cookie httpOnly `admin_token`, validade 8h).
+O painel em `apps/admin` (porta 3002) está implementado para login, dashboard, listagem, check-in por número de peito e importação de numeração. Acesso protegido por JWT (cookie httpOnly `admin_token`, validade 8h).
 
 ### Módulos
 
 | Rota | Funcionalidade |
 |---|---|
 | `/login` | Formulário email+senha, JWT via `POST /api/v1/admin/auth`, define cookie httpOnly via `/api/auth/session` |
-| `/dashboard` | Server component: totalizadores (total inscritos, receita, vagas por categoria, distribuição de camisetas) |
-| `/participantes` | Tabela paginada (20/pág), filtros por categoria/status/camiseta, busca por nome e e-mail, CPF mascarado |
-| `/checkin` | Busca participante por nome ou e-mail, exibe dados, registra `checkinRealizadoEm` via proxy |
-| `/checkin/[numeroPeito]` | Check-in direto pelo número de peito (fluxo alternativo para evento) |
-| `/checkin/importar` | Upload de planilha CSV ou XLSX, preview dos primeiros 10 registros, vincula números de peito aos participantes por ordem de `createdAt` dentro de cada categoria |
+| `/dashboard` | Server component: totalizadores (total inscritos, pedidos pagos/pendentes, receita, vagas por categoria) |
+| `/participantes` | Tabela paginada (20/pág), filtros por categoria/status, busca por nome e e-mail |
+| `/checkin` | Busca por número de peito, exibe dados e registra `checkinRealizadoEm` via proxy |
+| `/importar` | Upload de planilha CSV ou XLSX, preview dos primeiros registros, vincula números de peito aos participantes por CPF |
 | `/logout` | Limpa cookie `admin_token` e redireciona para `/login` |
 
 ### Rotas internas do admin
 
 ```
 POST /api/auth/session         ← recebe token do login, define cookie httpOnly
-GET|POST /api/proxy/[...path]  ← proxy para apps/api com token do cookie
+GET /api/checkin/[numeroPeito] ← proxy para buscar participante por número de peito
+POST /api/checkin              ← proxy para registrar check-in
+POST /api/importar             ← proxy para importar planilha de numeração
 ```
 
 ### Autenticação e middleware
@@ -314,7 +315,7 @@ Conformidade com PCI-DSS. Os dados do cartão nunca trafegam pelo nosso servidor
 
 ### Por que o admin usa proxy em vez de chamar apps/api diretamente?
 
-O `admin_token` é um cookie httpOnly — o JavaScript do browser não pode lê-lo. Portanto, o browser não pode incluí-lo em chamadas fetch para `apps/api`. O proxy `/api/proxy/[...path]` roda server-side no app admin, lê o cookie e adiciona o header `Authorization: Bearer` antes de repassar a requisição. Ver diagrama em Arquitetura.
+O `admin_token` é um cookie httpOnly — o JavaScript do browser não pode lê-lo. Portanto, o browser não pode incluí-lo em chamadas fetch para `apps/api`. As rotas internas `/api/checkin/*` e `/api/importar` rodam server-side no app admin, leem o cookie e adicionam o header `Authorization: Bearer` antes de repassar a requisição. Ver diagrama em Arquitetura.
 
 ### Por que o e-mail é fire-and-forget?
 
@@ -616,7 +617,7 @@ Verificar logs da Vercel (em produção) ou do servidor local.
 
 ### Admin retorna 401 em rotas protegidas
 
-O proxy em `apps/admin/api/proxy` não encontrou o cookie `admin_token`. Verifique:
+Uma rota interna do admin (`/api/checkin/*` ou `/api/importar`) não encontrou o cookie `admin_token`. Verifique:
 1. O login foi feito com sucesso (cookie definido via `/api/auth/session`)
 2. `ADMIN_JWT_SECRET` é o mesmo em `apps/api` e `apps/admin`
 3. O token não expirou (TTL: 8h)
