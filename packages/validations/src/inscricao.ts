@@ -8,7 +8,19 @@ export const InscricaoSchema = z.object({
   cpf: z
     .string()
     .refine(validarCPF, { message: "CPF inválido" }),
-  dataNascimento: z.string().datetime({ message: "Data de nascimento inválida" }),
+  dataNascimento: z
+    .string()
+    .datetime({ message: "Data de nascimento inválida" })
+    .refine((val) => {
+      const birth = new Date(val)
+      const today = new Date()
+      let age = today.getFullYear() - birth.getFullYear()
+      if (
+        today.getMonth() < birth.getMonth() ||
+        (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
+      ) age--
+      return age >= 15
+    }, { message: "Participante deve ter no mínimo 15 anos" }),
   telefone: z
     .string()
     .min(10, "Telefone deve ter no mínimo 10 dígitos")
@@ -18,7 +30,7 @@ export const InscricaoSchema = z.object({
     .string()
     .min(3, "Contato de emergência deve ter no mínimo 3 caracteres"),
   tamanhoCamiseta: TamanhoCamisetaEnum,
-  categoriaId: z.string().cuid("ID de categoria inválido"),
+  categoriaId: z.string().min(1, "ID de categoria inválido"),
 });
 
 export type InscricaoInput = z.infer<typeof InscricaoSchema>;

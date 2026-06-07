@@ -40,6 +40,7 @@ export interface Participante {
 
 export interface Pedido {
   id: string;
+  numeroPedido: string;
   total: number;
   status: StatusPedido;
   metodoPagamento: MetodoPagamento;
