@@ -9,10 +9,27 @@ function getToken(req: NextRequest): string | null {
   return auth.slice(7);
 }
 
+function faixaEtaria(dataNascimento: string): string {
+  const evento = new Date("2026-09-27T12:00:00Z");
+  const birth = new Date(dataNascimento);
+  let age = evento.getFullYear() - birth.getFullYear();
+  if (evento.getMonth() < birth.getMonth() || (evento.getMonth() === birth.getMonth() && evento.getDate() < birth.getDate())) age--;
+  if (age < 16) return "< 16 anos";
+  if (age <= 29) return "FX1 (16-29)";
+  if (age <= 39) return "FX2 (30-39)";
+  if (age <= 49) return "FX3 (40-49)";
+  if (age <= 59) return "FX4 (50-59)";
+  if (age <= 64) return "FX5 (60-64)";
+  return "FX6 (65+)";
+}
+
 interface ExportRow {
   nome: string;
   email: string;
   telefone: string;
+  dataNascimento: string;
+  faixaEtaria: string;
+  contatoEmergencia: string;
   categoria: string;
   percursoKm: number;
   camiseta: string;
@@ -39,9 +56,9 @@ function escapeCSV(val: string): string {
 
 function generateCSV(rows: ExportRow[]): string {
   const headers = [
-    "Nome", "E-mail", "Telefone", "Categoria", "Percurso (km)",
-    "Camiseta", "Nº Peito", "Pedido", "Status", "Pagamento",
-    "Valor (R$)", "Check-in", "Data Inscrição",
+    "Nome", "E-mail", "Telefone", "Data de Nascimento", "Faixa Etária", "Contato de Emergência",
+    "Categoria", "Percurso (km)", "Camiseta", "Nº Peito",
+    "Pedido", "Status", "Pagamento", "Valor (R$)", "Check-in", "Data Inscrição",
   ];
   const lines = [headers.map(escapeCSV).join(",")];
   for (const row of rows) {
@@ -49,6 +66,9 @@ function generateCSV(rows: ExportRow[]): string {
       escapeCSV(row.nome),
       escapeCSV(row.email),
       escapeCSV(row.telefone),
+      escapeCSV(row.dataNascimento),
+      escapeCSV(row.faixaEtaria),
+      escapeCSV(row.contatoEmergencia),
       escapeCSV(row.categoria),
       String(row.percursoKm),
       escapeCSV(row.camiseta),
@@ -69,6 +89,9 @@ function generateXLSX(rows: ExportRow[]): ArrayBuffer {
     Nome: row.nome,
     "E-mail": row.email,
     Telefone: row.telefone,
+    "Data de Nascimento": row.dataNascimento,
+    "Faixa Etária": row.faixaEtaria,
+    "Contato de Emergência": row.contatoEmergencia,
     Categoria: row.categoria,
     "Percurso (km)": row.percursoKm,
     Camiseta: row.camiseta,
@@ -128,6 +151,8 @@ export async function GET(req: NextRequest) {
       nome: true,
       email: true,
       telefone: true,
+      dataNascimento: true,
+      contatoEmergencia: true,
       tamanhoCamiseta: true,
       numeroPeito: true,
       checkinRealizadoEm: true,
@@ -150,6 +175,9 @@ export async function GET(req: NextRequest) {
     nome: p.nome,
     email: p.email,
     telefone: p.telefone,
+    dataNascimento: new Date(p.dataNascimento).toLocaleDateString("pt-BR"),
+    faixaEtaria: faixaEtaria(p.dataNascimento.toISOString()),
+    contatoEmergencia: p.contatoEmergencia,
     categoria: p.categoria.nome,
     percursoKm: p.categoria.percursoKm,
     camiseta: p.tamanhoCamiseta,

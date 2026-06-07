@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma, Prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
 import { sendConfirmacaoEmail } from "@corrida/email";
+import { criptografarCpf } from "@/lib/cpf-crypto";
 import { z } from "zod";
 
 const InscricoesSchema = z.array(InscricaoSchema).min(1).max(5);
@@ -110,10 +111,13 @@ export async function POST(
         data: {
           nome: inscricao.nome,
           cpf: cpfHashes[idx],
+          cpfCriptografado: criptografarCpf(inscricao.cpf),
           dataNascimento: new Date(inscricao.dataNascimento),
           telefone: inscricao.telefone,
           email: inscricao.email,
           contatoEmergencia: inscricao.contatoEmergencia,
+          sexo: inscricao.sexo,
+          grupoCorrida: inscricao.grupoCorrida ?? null,
           tamanhoCamiseta: inscricao.tamanhoCamiseta,
           categoriaId: inscricao.categoriaId,
           pedidoId: id,

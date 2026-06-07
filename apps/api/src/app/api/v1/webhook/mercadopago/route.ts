@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import MercadoPago, { Payment } from "mercadopago";
 import { z } from "zod";
 import { prisma, Prisma } from "@corrida/db";
+import { criptografarCpf } from "@/lib/cpf-crypto";
 import { InscricaoSchema } from "@corrida/validations";
 import { sendConfirmacaoEmail } from "@corrida/email";
 
@@ -148,10 +149,13 @@ export async function POST(req: NextRequest) {
           data: {
             nome: inscricao.nome,
             cpf: cpfHashes[idx],
+            cpfCriptografado: criptografarCpf(inscricao.cpf),
             dataNascimento: new Date(inscricao.dataNascimento),
             telefone: inscricao.telefone,
             email: inscricao.email,
             contatoEmergencia: inscricao.contatoEmergencia,
+            sexo: inscricao.sexo,
+            grupoCorrida: inscricao.grupoCorrida ?? null,
             tamanhoCamiseta: inscricao.tamanhoCamiseta,
             categoriaId: inscricao.categoriaId,
             pedidoId,

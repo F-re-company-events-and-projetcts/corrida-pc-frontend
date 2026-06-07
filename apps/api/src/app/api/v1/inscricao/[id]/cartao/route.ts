@@ -5,6 +5,7 @@ import MercadoPago, { Payment } from "mercadopago";
 import { prisma, Prisma } from "@corrida/db";
 import { InscricaoSchema } from "@corrida/validations";
 import { sendConfirmacaoEmail } from "@corrida/email";
+import { criptografarCpf } from "@/lib/cpf-crypto";
 
 const CardPaymentSchema = z.object({
   token: z.string().min(1),
@@ -92,6 +93,7 @@ export async function POST(
         payer: { email: inscricoes[0].email },
         external_reference: pedido.id,
         description: `Inscrição Corrida PC — Pedido ${pedido.numeroPedido}`,
+        statement_descriptor: "CORRIDA PC",
       },
     });
   } catch (err) {
@@ -133,10 +135,13 @@ export async function POST(
           data: {
             nome: inscricao.nome,
             cpf: cpfHashes[idx],
+            cpfCriptografado: criptografarCpf(inscricao.cpf),
             dataNascimento: new Date(inscricao.dataNascimento),
             telefone: inscricao.telefone,
             email: inscricao.email,
             contatoEmergencia: inscricao.contatoEmergencia,
+            sexo: inscricao.sexo,
+            grupoCorrida: inscricao.grupoCorrida ?? null,
             tamanhoCamiseta: inscricao.tamanhoCamiseta,
             categoriaId: inscricao.categoriaId,
             pedidoId: id,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { prisma } from "@corrida/db";
+import { descriptografarCpf } from "@/lib/cpf-crypto";
 
 function getToken(req: NextRequest): string | null {
   const auth = req.headers.get("authorization");
@@ -69,6 +70,8 @@ export async function GET(req: NextRequest) {
         nome: true,
         email: true,
         telefone: true,
+        dataNascimento: true,
+        cpfCriptografado: true,
         tamanhoCamiseta: true,
         numeroPeito: true,
         checkinRealizadoEm: true,
@@ -88,7 +91,12 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json({
-    participantes,
+    participantes: participantes.map((p: (typeof participantes)[number]) => ({
+      ...p,
+      cpf: p.cpfCriptografado ? descriptografarCpf(p.cpfCriptografado) : null,
+      cpfCriptografado: undefined,
+      dataNascimento: new Date(p.dataNascimento).toLocaleDateString("pt-BR"),
+    })),
     total,
     page,
     totalPages: Math.ceil(total / limit),

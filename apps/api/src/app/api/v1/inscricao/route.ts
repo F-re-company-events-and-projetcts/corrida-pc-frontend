@@ -120,6 +120,27 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Validar idade mínima por categoria na data do evento (27/09/2026)
+  const eventoData = new Date("2026-09-27T12:00:00Z");
+  for (const inscricao of inscricoes) {
+    const cat = categoryMap.get(inscricao.categoriaId)!;
+    const birth = new Date(inscricao.dataNascimento);
+    let age = eventoData.getFullYear() - birth.getFullYear();
+    if (
+      eventoData.getMonth() < birth.getMonth() ||
+      (eventoData.getMonth() === birth.getMonth() && eventoData.getDate() < birth.getDate())
+    ) age--;
+    const minimo = cat.percursoKm >= 10 ? 16 : 15;
+    if (age < minimo) {
+      return NextResponse.json(
+        {
+          error: `Para ${cat.nome}, a idade mínima é ${minimo} anos na data do evento (27/09/2026). "${inscricao.nome}" terá ${age} anos.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   // Calculate order total (includes service fee from Configuracao table)
   const total = inscricoes.reduce((acc, inscricao) => {
     const cat = categoryMap.get(inscricao.categoriaId)!;
