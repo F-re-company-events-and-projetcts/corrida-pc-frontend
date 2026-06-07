@@ -141,7 +141,10 @@ export async function POST(req: NextRequest) {
 
   // For card payments: no PIX generation — frontend calls /inscricao/[id]/cartao next
   if (metodoPagamento === "CARTAO") {
-    return NextResponse.json({ pedidoId: pedido.id, total }, { status: 201 });
+    return NextResponse.json(
+      { pedidoId: pedido.id, numeroPedido: pedido.numeroPedido, total },
+      { status: 201 }
+    );
   }
 
   // Generate PIX via Mercado Pago
@@ -160,7 +163,7 @@ export async function POST(req: NextRequest) {
           first_name: primeiroInscrito.nome.split(" ")[0],
         },
         date_of_expiration: expiresAt!.toISOString(),
-        description: `Inscrição Corrida PC — Pedido ${pedido.id}`,
+        description: `Inscrição Corrida PC — Pedido ${pedido.numeroPedido}`,
         external_reference: pedido.id,
       },
     });
@@ -199,6 +202,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       pedidoId: pedido.id,
+      numeroPedido: pedido.numeroPedido,
       qrCode,
       qrCodeBase64,
       expiresAt: expiresAt!.toISOString(),

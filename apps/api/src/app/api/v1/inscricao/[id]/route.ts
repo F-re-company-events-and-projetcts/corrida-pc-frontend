@@ -6,11 +6,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const where = id.startsWith("PC-") ? { numeroPedido: id } : { id };
 
   const pedido = await prisma.pedido.findUnique({
-    where: { id },
+    where,
     select: {
       id: true,
+      numeroPedido: true,
       status: true,
       expiresAt: true,
       metodoPagamento: true,
@@ -20,6 +22,7 @@ export async function GET(
         select: {
           id: true,
           nome: true,
+          numeroPeito: true,
           categoria: { select: { nome: true } },
         },
       },
@@ -32,6 +35,7 @@ export async function GET(
 
   return NextResponse.json({
     id: pedido.id,
+    numeroPedido: pedido.numeroPedido,
     status: pedido.status,
     expiresAt: pedido.expiresAt?.toISOString() ?? null,
     metodoPagamento: pedido.metodoPagamento,
@@ -40,6 +44,7 @@ export async function GET(
     participantes: pedido.participantes.map((p) => ({
       id: p.id,
       nome: p.nome,
+      numeroPeito: p.numeroPeito,
       categoria: p.categoria.nome,
     })),
   });

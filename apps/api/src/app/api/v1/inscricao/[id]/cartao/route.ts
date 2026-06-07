@@ -8,8 +8,8 @@ import { sendConfirmacaoEmail } from "@corrida/email";
 
 const CardPaymentSchema = z.object({
   token: z.string().min(1),
-  installments: z.number().int().min(1).max(12),
-  issuerId: z.string().optional(),
+  installments: z.coerce.number().int().min(1).max(12),
+  issuerId: z.coerce.string().optional(),
   paymentMethodId: z.string().min(1),
   inscricoes: z.array(InscricaoSchema).min(1).max(5),
 });
@@ -69,6 +69,7 @@ export async function POST(
 
   const parsed = CardPaymentSchema.safeParse(rawBody);
   if (!parsed.success) {
+    console.warn("[cartao] Invalid request body:", parsed.error.flatten());
     return NextResponse.json(
       { error: "Dados inválidos", details: parsed.error.flatten() },
       { status: 400 }
@@ -90,7 +91,7 @@ export async function POST(
         issuer_id: issuerId ? parseInt(issuerId, 10) : undefined,
         payer: { email: inscricoes[0].email },
         external_reference: pedido.id,
-        description: `Inscrição Corrida PC — Pedido ${pedido.id}`,
+        description: `Inscrição Corrida PC — Pedido ${pedido.numeroPedido}`,
       },
     });
   } catch (err) {
@@ -125,45 +126,63 @@ export async function POST(
     {}
   );
 
-  await prisma.$transaction(async (tx) => {
-    for (const [idx, inscricao] of inscricoes.entries()) {
-      await tx.participante.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (const [idx, inscricao] of inscricoes.entries()) {
+        await tx.participante.create({
+          data: {
+            nome: inscricao.nome,
+            cpf: cpfHashes[idx],
+            dataNascimento: new Date(inscricao.dataNascimento),
+            telefone: inscricao.telefone,
+            email: inscricao.email,
+            contatoEmergencia: inscricao.contatoEmergencia,
+            tamanhoCamiseta: inscricao.tamanhoCamiseta,
+            categoriaId: inscricao.categoriaId,
+            pedidoId: id,
+          },
+        });
+      }
+
+      await tx.pagamento.create({
         data: {
-          nome: inscricao.nome,
-          cpf: cpfHashes[idx],
-          dataNascimento: new Date(inscricao.dataNascimento),
-          telefone: inscricao.telefone,
-          email: inscricao.email,
-          contatoEmergencia: inscricao.contatoEmergencia,
-          tamanhoCamiseta: inscricao.tamanhoCamiseta,
-          categoriaId: inscricao.categoriaId,
           pedidoId: id,
+          paymentIdGateway: paymentIdStr,
+          valor: pedido.total,
+          metodo: "CARTAO",
+          status: "approved",
         },
       });
-    }
 
-    await tx.pagamento.create({
-      data: {
-        pedidoId: id,
-        paymentIdGateway: paymentIdStr,
-        valor: pedido.total,
-        metodo: "CARTAO",
-        status: "approved",
-      },
-    });
-
-    await tx.pedido.update({
-      where: { id },
-      data: { status: "PAGO", paymentId: paymentIdStr },
-    });
-
-    for (const [categoriaId, count] of Object.entries(countPerCategory)) {
-      await tx.categoria.update({
-        where: { id: categoriaId },
-        data: { vagasOcupadas: { increment: count } },
+      await tx.pedido.update({
+        where: { id },
+        data: { status: "PAGO", paymentId: paymentIdStr },
       });
+
+      for (const [categoriaId, count] of Object.entries(countPerCategory)) {
+        const updated = await tx.$executeRaw`
+          UPDATE "Categoria"
+          SET "vagasOcupadas" = "vagasOcupadas" + ${count}
+          WHERE "id" = ${categoriaId}
+          AND ("vagasOcupadas" + ${count}) <= "vagasTotal"
+        `;
+        if (updated === 0) {
+          throw new Error(`VAGA_INDISPONIVEL:${categoriaId}`);
+        }
+      }
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("VAGA_INDISPONIVEL")) {
+      console.error(
+        `[cartao] Cartão aprovado mas sem vagas: pedidoId=${id} paymentId=${paymentIdStr} — ${err.message}`
+      );
+      return NextResponse.json(
+        { error: "Vagas esgotadas durante o processamento. Entre em contato com a organização." },
+        { status: 409 }
+      );
     }
-  });
+    throw err;
+  }
 
   // Fire-and-forget: fetch participantes and send confirmation email
   void (async () => {
@@ -177,6 +196,7 @@ export async function POST(
       if (destinatario) {
         await sendConfirmacaoEmail({
           pedidoId: id,
+          numeroPedido: pedido.numeroPedido,
           email: destinatario,
           total: pedido.total,
           participantes: participantes.map((p) => ({
@@ -191,5 +211,5 @@ export async function POST(
     }
   })();
 
-  return NextResponse.json({ ok: true, pedidoId: id });
+  return NextResponse.json({ ok: true, pedidoId: id, numeroPedido: pedido.numeroPedido });
 }

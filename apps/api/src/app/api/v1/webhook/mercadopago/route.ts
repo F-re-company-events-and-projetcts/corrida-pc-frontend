@@ -141,48 +141,64 @@ export async function POST(req: NextRequest) {
     {}
   );
 
-  await prisma.$transaction(async (tx) => {
-    for (const [idx, inscricao] of inscricoes.entries()) {
-      await tx.participante.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (const [idx, inscricao] of inscricoes.entries()) {
+        await tx.participante.create({
+          data: {
+            nome: inscricao.nome,
+            cpf: cpfHashes[idx],
+            dataNascimento: new Date(inscricao.dataNascimento),
+            telefone: inscricao.telefone,
+            email: inscricao.email,
+            contatoEmergencia: inscricao.contatoEmergencia,
+            tamanhoCamiseta: inscricao.tamanhoCamiseta,
+            categoriaId: inscricao.categoriaId,
+            pedidoId,
+          },
+        });
+      }
+
+      await tx.pagamento.create({
         data: {
-          nome: inscricao.nome,
-          cpf: cpfHashes[idx],
-          dataNascimento: new Date(inscricao.dataNascimento),
-          telefone: inscricao.telefone,
-          email: inscricao.email,
-          contatoEmergencia: inscricao.contatoEmergencia,
-          tamanhoCamiseta: inscricao.tamanhoCamiseta,
-          categoriaId: inscricao.categoriaId,
           pedidoId,
+          paymentIdGateway,
+          valor: pedido.total,
+          metodo: "PIX",
+          status: "approved",
+          webhookRecebidoEm: new Date(),
         },
       });
-    }
 
-    await tx.pagamento.create({
-      data: {
-        pedidoId,
-        paymentIdGateway,
-        valor: pedido.total,
-        metodo: "PIX",
-        status: "approved",
-        webhookRecebidoEm: new Date(),
-      },
-    });
-
-    await tx.pedido.update({
-      where: { id: pedidoId },
-      data: { status: "PAGO", paymentId: paymentIdGateway },
-    });
-
-    for (const [categoriaId, count] of Object.entries(countPerCategory)) {
-      await tx.categoria.update({
-        where: { id: categoriaId },
-        data: { vagasOcupadas: { increment: count } },
+      await tx.pedido.update({
+        where: { id: pedidoId },
+        data: { status: "PAGO", paymentId: paymentIdGateway },
       });
-    }
 
-    await tx.pedidoRascunho.delete({ where: { pedidoId } });
-  });
+      for (const [categoriaId, count] of Object.entries(countPerCategory)) {
+        const updated = await tx.$executeRaw`
+          UPDATE "Categoria"
+          SET "vagasOcupadas" = "vagasOcupadas" + ${count}
+          WHERE "id" = ${categoriaId}
+          AND ("vagasOcupadas" + ${count}) <= "vagasTotal"
+        `;
+        if (updated === 0) {
+          throw new Error(`VAGA_INDISPONIVEL:${categoriaId}`);
+        }
+      }
+
+      await tx.pedidoRascunho.delete({ where: { pedidoId } });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("VAGA_INDISPONIVEL")) {
+      console.error(
+        `[webhook] PIX aprovado mas sem vagas: pedidoId=${pedidoId} paymentId=${paymentIdGateway} — ${err.message}`
+      );
+      // Retorna 200 para o MP não retentar; situação requer tratamento manual (reembolso)
+      return NextResponse.json({ ok: true });
+    }
+    throw err;
+  }
 
   console.log(
     `[webhook] PIX confirmed: pedidoId=${pedidoId}, paymentId=${paymentIdGateway}`
@@ -200,6 +216,7 @@ export async function POST(req: NextRequest) {
       if (destinatario) {
         await sendConfirmacaoEmail({
           pedidoId,
+          numeroPedido: pedido.numeroPedido,
           email: destinatario,
           total: pedido.total,
           participantes: participantes.map((p) => ({
