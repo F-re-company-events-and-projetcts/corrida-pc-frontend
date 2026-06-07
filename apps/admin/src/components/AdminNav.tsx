@@ -1,9 +1,11 @@
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/pedidos", label: "Pedidos" },
   { href: "/participantes", label: "Participantes" },
   { href: "/checkin", label: "Check-in" },
   { href: "/lotes", label: "Lotes" },
   { href: "/importar", label: "Importar" },
+  { href: "/configuracoes", label: "Configurações" },
 ];
 
 interface AdminNavProps {

@@ -124,10 +124,14 @@ export default function ImportarPage() {
       <AdminNav active="/importar" />
 
       <main className="max-w-4xl mx-auto px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Importar números de peito</h2>
-        <p className="text-sm text-gray-500 mb-8">
-          Envie um arquivo CSV ou XLSX com colunas <code className="bg-gray-100 px-1 rounded">cpf</code> e{" "}
-          <code className="bg-gray-100 px-1 rounded">numeroPeito</code>. Máximo de 1000 linhas.
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-2xl font-bold text-gray-900">Importar números de peito</h2>
+        </div>
+        <p className="text-sm text-gray-500">
+          Envie um arquivo CSV ou XLSX com colunas{" "}
+          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">cpf</code>{" "}e{" "}
+          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">numeroPeito</code>.
+          Máximo de 1000 linhas.
         </p>
 
         {/* Upload */}

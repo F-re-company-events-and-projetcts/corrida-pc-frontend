@@ -271,7 +271,7 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
               type="text"
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -281,7 +281,7 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -292,7 +292,7 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
               value={form.telefone}
               onChange={(e) => setForm({ ...form, telefone: e.target.value.replace(/\D/g, "") })}
               maxLength={11}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -302,7 +302,7 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
               type="text"
               value={form.contatoEmergencia}
               onChange={(e) => setForm({ ...form, contatoEmergencia: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -311,7 +311,7 @@ export function EditParticipanteForm({ initial }: { initial: Participante }) {
             <select
               value={form.tamanhoCamiseta}
               onChange={(e) => setForm({ ...form, tamanhoCamiseta: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {TAMANHOS.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
