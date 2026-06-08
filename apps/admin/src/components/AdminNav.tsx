@@ -3,6 +3,7 @@ const LINKS = [
   { href: "/pedidos", label: "Pedidos" },
   { href: "/participantes", label: "Participantes" },
   { href: "/checkin", label: "Check-in" },
+  { href: "/credenciamento", label: "Credenciamento" },
   { href: "/lotes", label: "Lotes" },
   { href: "/importar", label: "Importar" },
   { href: "/configuracoes", label: "Configurações" },
