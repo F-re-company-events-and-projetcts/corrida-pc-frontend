@@ -19,7 +19,7 @@ function categoriaToPricingCardProps(cat: Categoria) {
         priceAtual: cat.precoAtual,
         type: (isPolice ? "police" : "public") as "police" | "public",
         badge: isPolice ? "LOTE ÚNICO" : undefined,
-        subtext: isPolice ? "esta categoria abrange todas as forças policiais" : undefined,
+        subtext: isPolice ? "esta categoria abrange todas as forças da segurança pública" : undefined,
         lotText: isPolice ? "Valor Fixo" : "Lote Ativo",
         features: FEATURES,
         disabled: cat.vagasDisponiveis === 0,
