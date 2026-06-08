@@ -139,7 +139,7 @@ export async function POST(
             dataNascimento: new Date(inscricao.dataNascimento),
             telefone: inscricao.telefone,
             email: inscricao.email,
-            contatoEmergencia: inscricao.contatoEmergencia,
+            contatoEmergencia: inscricao.contatoEmergencia ?? "",
             sexo: inscricao.sexo,
             grupoCorrida: inscricao.grupoCorrida ?? null,
             tamanhoCamiseta: inscricao.tamanhoCamiseta,
