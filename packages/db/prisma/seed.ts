@@ -6,12 +6,13 @@ async function main() {
   // Categorias
   await prisma.categoria.upsert({
     where: { id: "cat-4km-cidadao" },
-    update: {},
+    update: { temPodio: false },
     create: {
       id: "cat-4km-cidadao",
       nome: "4KM Cidadão",
       percursoKm: 4,
       tipo: "CIDADAO",
+      temPodio: false,
       vagasTotal: 150,
       vagasOcupadas: 0,
     },
@@ -19,12 +20,13 @@ async function main() {
 
   await prisma.categoria.upsert({
     where: { id: "cat-4km-policial" },
-    update: {},
+    update: { temPodio: false },
     create: {
       id: "cat-4km-policial",
       nome: "4KM Policial",
       percursoKm: 4,
       tipo: "POLICIAL",
+      temPodio: false,
       vagasTotal: 150,
       vagasOcupadas: 0,
     },

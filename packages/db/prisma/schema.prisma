@@ -12,6 +12,7 @@ model Categoria {
   nome          String
   percursoKm    Int
   tipo          TipoCategoria
+  temPodio      Boolean        @default(true)
   vagasTotal    Int            @default(150)
   vagasOcupadas Int            @default(0)
   createdAt     DateTime       @default(now())
@@ -67,9 +68,10 @@ model Participante {
   tamanhoCamiseta    TamanhoCamiseta
   categoriaId        String
   pedidoId           String
-  numeroPeito        Int?
-  checkinRealizadoEm DateTime?
-  createdAt          DateTime        @default(now())
+  numeroPeito          Int?
+  checkinRealizadoEm   DateTime?
+  credencialRetiradaEm DateTime?
+  createdAt            DateTime        @default(now())
   categoria          Categoria       @relation(fields: [categoriaId], references: [id])
   pedido             Pedido          @relation(fields: [pedidoId], references: [id])
 
