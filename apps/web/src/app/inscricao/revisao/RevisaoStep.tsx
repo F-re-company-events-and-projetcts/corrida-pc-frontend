@@ -21,6 +21,7 @@ export function RevisaoStep({ categorias }: Props) {
   const [aceitaRegulamento, setAceitaRegulamento] = useState(false)
   const [aceitaLGPD, setAceitaLGPD] = useState(false)
   const [aceitaReembolso, setAceitaReembolso] = useState(false)
+  const [aceitaImagem, setAceitaImagem] = useState(false)
   const [declaraPolicial, setDeclaraPolicial] = useState(false)
 
   const categoriaMap = Object.fromEntries(categorias.map((c) => [c.id, c]))
@@ -33,7 +34,7 @@ export function RevisaoStep({ categorias }: Props) {
   }, 0)
 
   const podeAvancar =
-    aceitaRegulamento && aceitaLGPD && aceitaReembolso && (!temPolicial || declaraPolicial) && metodoPagamento !== null
+    aceitaRegulamento && aceitaLGPD && aceitaReembolso && aceitaImagem && (!temPolicial || declaraPolicial) && metodoPagamento !== null
 
   return (
     <div className="space-y-8">
@@ -158,6 +159,17 @@ export function RevisaoStep({ categorias }: Props) {
               política de reembolso
             </a>
             : não há reembolso após a confirmação do pagamento, exceto em caso de cancelamento do evento pela organização.
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="imagem"
+            checked={aceitaImagem}
+            onCheckedChange={(v) => setAceitaImagem(v === true)}
+          />
+          <label htmlFor="imagem" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
+            Autorizo o uso de imagens e vídeos em que eu apareça para fins de divulgação do evento, conforme Seção 5.10 do regulamento.
           </label>
         </div>
 
