@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       eventoData.getMonth() < birth.getMonth() ||
       (eventoData.getMonth() === birth.getMonth() && eventoData.getDate() < birth.getDate())
     ) age--;
-    const minimo = cat.percursoKm >= 10 ? 16 : 15;
+    const minimo = 16; // regulamento: 16 anos mínimo para todas as categorias
     if (age < minimo) {
       return NextResponse.json(
         {

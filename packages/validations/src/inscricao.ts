@@ -13,8 +13,7 @@ export const InscricaoSchema = z.object({
     .string()
     .datetime({ message: "Data de nascimento inválida" })
     .refine((val) => {
-      // Valida idade mínima de 15 anos na data do evento (27/09/2026)
-      // Validação específica por categoria (10KM = 16 anos) é feita no servidor/formulário
+      // Valida idade mínima de 16 anos na data do evento (27/09/2026)
       const birth = new Date(val)
       const evento = new Date("2026-09-27T12:00:00Z")
       let age = evento.getFullYear() - birth.getFullYear()
@@ -22,8 +21,8 @@ export const InscricaoSchema = z.object({
         evento.getMonth() < birth.getMonth() ||
         (evento.getMonth() === birth.getMonth() && evento.getDate() < birth.getDate())
       ) age--
-      return age >= 15
-    }, { message: "Participante deve ter no mínimo 15 anos na data do evento (27/09/2026)" }),
+      return age >= 16
+    }, { message: "Participante deve ter no mínimo 16 anos na data do evento (27/09/2026)" }),
   telefone: z
     .string()
     .min(10, "Telefone deve ter no mínimo 10 dígitos")

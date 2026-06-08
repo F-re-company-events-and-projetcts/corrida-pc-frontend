@@ -30,9 +30,9 @@ function idadeNaDataDoEvento(dateStr: string): number {
   return age
 }
 
-// Mínimo de idade na data do evento por percurso
-function idadeMinima(percursoKm: number): number {
-  return percursoKm >= 10 ? 16 : 15
+// Mínimo de idade na data do evento — 16 anos para todas as categorias (regulamento)
+function idadeMinima(_percursoKm: number): number {
+  return 16
 }
 
 const SEXOS = [
@@ -47,8 +47,8 @@ const InscritoFormSchema = z.object({
   dataNascimento: z
     .string()
     .min(1, 'Data de nascimento é obrigatória')
-    .refine((val) => !val || idadeNaDataDoEvento(val) >= 15, {
-      message: 'Participante deve ter no mínimo 15 anos na data do evento (27/09/2026)',
+    .refine((val) => !val || idadeNaDataDoEvento(val) >= 16, {
+      message: 'Participante deve ter no mínimo 16 anos na data do evento (27/09/2026)',
     }),
   telefone: z
     .string()
@@ -298,7 +298,7 @@ export function DadosStep({ categorias }: Props) {
                 const val = watch(`inscritos.${idx}.dataNascimento`)
                 if (!val || fieldErrors?.dataNascimento) return null
                 const age = idadeNaDataDoEvento(val)
-                if (age >= 15 && age < 18) {
+                if (age >= 16 && age < 18) {
                   return (
                     <p className="mt-1 text-sm text-amber-600">
                       Participante menor de 18 anos — a autorização do responsável legal será exigida no check-in.
