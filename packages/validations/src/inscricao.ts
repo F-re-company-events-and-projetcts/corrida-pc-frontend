@@ -29,9 +29,7 @@ export const InscricaoSchema = z.object({
     .min(10, "Telefone deve ter no mínimo 10 dígitos")
     .regex(/^\d+$/, "Telefone deve conter apenas números"),
   email: z.string().email("E-mail inválido"),
-  contatoEmergencia: z
-    .string()
-    .min(3, "Contato de emergência deve ter no mínimo 3 caracteres"),
+  contatoEmergencia: z.string().optional(),
   sexo: SexoEnum,
   grupoCorrida: z.string().max(100).optional(),
   tamanhoCamiseta: TamanhoCamisetaEnum,

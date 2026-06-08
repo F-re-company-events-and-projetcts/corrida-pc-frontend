@@ -55,7 +55,7 @@ const InscritoFormSchema = z.object({
     .min(10, 'Telefone deve ter no mínimo 10 dígitos')
     .regex(/^\d+$/, 'Apenas números'),
   email: z.string().email('E-mail inválido'),
-  contatoEmergencia: z.string().min(3, 'Contato de emergência deve ter no mínimo 3 caracteres'),
+  contatoEmergencia: z.string().optional(),
   sexo: z.enum(['MASCULINO', 'FEMININO', 'OUTRO'], { required_error: 'Selecione o sexo' }),
   grupoCorrida: z.string().max(100).optional(),
   tamanhoCamiseta: z.enum(TAMANHOS),
@@ -129,7 +129,7 @@ interface Props {
 
 export function DadosStep({ categorias }: Props) {
   const router = useRouter()
-  const { categoriaId, setInscricoes } = useInscricao()
+  const { categoriaId, setInscricoes, inscricoes: inscricoesContext } = useInscricao()
 
   // Schema com categorias para validar idade mínima por percurso
   const schema = criarDadosFormSchema(categorias)
@@ -145,7 +145,21 @@ export function DadosStep({ categorias }: Props) {
     resolver: zodResolver(schema),
     mode: 'onChange',
     defaultValues: {
-      inscritos: [emptyInscrito(categoriaId ?? '')],
+      // Se há dados no contexto (usuário clicou "Editar"), pré-popular
+      inscritos: inscricoesContext.length > 0
+        ? inscricoesContext.map((i) => ({
+            nome: i.nome,
+            cpf: i.cpf,
+            dataNascimento: i.dataNascimento.slice(0, 10), // ISO → YYYY-MM-DD
+            telefone: i.telefone,
+            email: i.email,
+            sexo: i.sexo,
+            grupoCorrida: i.grupoCorrida ?? '',
+            contatoEmergencia: i.contatoEmergencia ?? '',
+            tamanhoCamiseta: i.tamanhoCamiseta as typeof TAMANHOS[number],
+            categoriaId: i.categoriaId,
+          }))
+        : [emptyInscrito(categoriaId ?? '')],
     },
   })
 
@@ -363,16 +377,13 @@ export function DadosStep({ categorias }: Props) {
             {/* Contato de emergência */}
             <div>
               <label className="block text-sm font-bold text-secondary uppercase tracking-wider mb-1">
-                Contato de emergência
+                Contato de emergência{' '}
+                <span className="text-gray-400 font-normal text-xs">(opcional)</span>
               </label>
               <Input
                 {...register(`inscritos.${idx}.contatoEmergencia`)}
                 placeholder="Nome e telefone de contato"
-                className={fieldErrors?.contatoEmergencia ? 'border-red-500' : ''}
               />
-              {fieldErrors?.contatoEmergencia && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.contatoEmergencia.message}</p>
-              )}
             </div>
 
             {/* Tamanho da camiseta */}

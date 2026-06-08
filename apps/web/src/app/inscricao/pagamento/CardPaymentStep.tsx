@@ -265,56 +265,77 @@ export function CardPaymentStep({ pedidoId, numeroPedido, total }: CardPaymentSt
         id="form-checkout"
         className={sdkState === 'ready' ? 'space-y-4' : 'hidden'}
       >
-        {/* Secure iframe fields injected by MercadoPago.js */}
-        <div className="space-y-3">
-          <div
-            id="form-checkout__cardNumber"
-            className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <div
-              id="form-checkout__expirationDate"
-              className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
-            />
-            <div
-              id="form-checkout__securityCode"
-              className="rounded-md border border-gray-200 bg-white min-h-[42px] overflow-hidden"
+        {/* Campos do cartão injetados pelo MP via iframe */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Número do cartão</label>
+            <div id="form-checkout__cardNumber" className="rounded-xl border border-gray-300 bg-white min-h-[46px] overflow-hidden px-1" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Validade</label>
+              <div id="form-checkout__expirationDate" className="rounded-xl border border-gray-300 bg-white min-h-[46px] overflow-hidden px-1" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">CVV</label>
+              <div id="form-checkout__securityCode" className="rounded-xl border border-gray-300 bg-white min-h-[46px] overflow-hidden px-1" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Nome no cartão</label>
+            <input
+              id="form-checkout__cardholderName"
+              className="w-full rounded-xl border border-gray-300 bg-white h-[46px] px-3 text-sm text-gray-900 outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
+              aria-label="Nome no cartão"
+              placeholder="Como aparece no cartão"
             />
           </div>
-          <input
-            id="form-checkout__cardholderName"
-            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
-            aria-label="Nome no cartão"
-            placeholder="Nome no cartão"
-          />
-          <select
-            id="form-checkout__issuer"
-            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
-            aria-label="Banco emissor"
-          >
-            <option value="">Banco emissor</option>
-          </select>
-          <select
-            id="form-checkout__installments"
-            className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
-            aria-label="Parcelas"
-          >
-            <option value="">Parcelas</option>
-          </select>
-          <div className="grid grid-cols-2 gap-3">
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Banco emissor</label>
             <select
-              id="form-checkout__identificationType"
-              className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
-              aria-label="Tipo de documento"
+              id="form-checkout__issuer"
+              className="w-full rounded-xl border border-gray-300 bg-white h-[46px] px-3 text-sm text-gray-900 outline-none focus:border-secondary"
+              aria-label="Banco emissor"
             >
-              <option value="">Tipo</option>
+              <option value="">Selecione o banco</option>
             </select>
-            <input
-              id="form-checkout__identificationNumber"
-              className="w-full rounded-md border border-gray-200 bg-white min-h-[42px] px-3 text-sm outline-none focus:border-secondary"
-              aria-label="CPF"
-              placeholder="CPF"
-            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Parcelas</label>
+            <select
+              id="form-checkout__installments"
+              className="w-full rounded-xl border border-gray-300 bg-white h-[46px] px-3 text-sm text-gray-900 outline-none focus:border-secondary"
+              aria-label="Parcelas"
+            >
+              <option value="">Selecione as parcelas</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tipo doc.</label>
+              <select
+                id="form-checkout__identificationType"
+                className="w-full rounded-xl border border-gray-300 bg-white h-[46px] px-2 text-sm text-gray-900 outline-none focus:border-secondary"
+                aria-label="Tipo de documento"
+              >
+                <option value="">Tipo</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">CPF do titular</label>
+              <input
+                id="form-checkout__identificationNumber"
+                className="w-full rounded-xl border border-gray-300 bg-white h-[46px] px-3 text-sm text-gray-900 outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
+                aria-label="CPF"
+                placeholder="000.000.000-00"
+              />
+            </div>
           </div>
         </div>
 
