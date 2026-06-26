@@ -21,7 +21,7 @@ export const Hero = () => {
             {/* Watermark Element */}
             <div className="relative z-10 container mx-auto px-4 text-center text-white mt-16 md:mt-0 flex flex-col items-center justify-center gap-6">
                 <div className="inline-block bg-primary px-3 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase animate-pulse mb-2">
-                    Inscrições em Breve! Fique Atento! 
+                    Inscrições Abertas! Fique Atento!
                 </div>
 
                 <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight tracking-tight drop-shadow-lg font-heading">
@@ -44,7 +44,7 @@ export const Hero = () => {
 
                 <div className="flex flex-col items-center justify-center w-full mt-6 gap-4 max-w-sm md:flex-row md:max-w-2xl">
                     <Button asChild className="text-base px-8 py-6 w-full box-border border-2 border-white md:text-lg md:w-auto shadow-orange-500/50 h-auto">
-                        <a href="#registration">VEJA AS MODALIDADES</a>
+                        <a href="#registration">INSCREVA-SE AGORA!</a>
                     </Button>
                     <a href="#corrida-info" className="flex items-center justify-center gap-2 text-white font-semibold hover:text-accent transition-colors w-full md:w-auto p-4 md:p-0">
                         <Award className="w-5 h-5" />
