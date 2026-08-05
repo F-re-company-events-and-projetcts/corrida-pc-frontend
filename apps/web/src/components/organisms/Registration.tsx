@@ -35,7 +35,6 @@ export const Registration = async () => {
                 <div className="flex flex-col items-center text-center mb-14">
                     <Typography variant="h2" as="h2" className="font-black mb-4 md:text-4xl ">ESCOLHA SUA MODALIDADE</Typography>
                     <div className="w-24 h-1 bg-primary"></div>
-                    <p className="text-gray-500 font-medium">Inscrições abertas de 08/06/2025 até 05/08/2025</p>
                 </div>
 
                 {/* Timeline de Lotes */}
